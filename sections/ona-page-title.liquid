@@ -1,0 +1,31 @@
+<section class="page-title">
+  <div class="container">
+    <h1>{% if section.settings.title2 != blank %}{{ section.settings.title2 }}{% else %}{{ page.title }}{% endif %}</h1>
+  </div>
+</section>
+{% schema %}
+{
+  "name": {
+    "en": "Page title"
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "title2",
+      "label": {
+		"en": "Title"
+      }
+    }
+  ],
+  "presets": [
+    {
+      "name": {
+        "en": "Page title"
+      },
+      "category": {
+        "en": "Text"
+      }
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,16 @@
+{
+  "sections": {
+    "bookings_top": {
+      "type": "ona-bookings-top",
+      "settings": {}
+    },
+    "training_iframe": {
+      "type": "ona-training-iframe",
+      "settings": {}
+    }
+  },
+  "order": [
+    "bookings_top",
+    "training_iframe"
+  ]
+}

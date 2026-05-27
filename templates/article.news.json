@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "ona-article-news-template",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}

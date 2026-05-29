@@ -1,6 +1,7 @@
 {%- comment -%}
   Product card matching the collection page layout.
   Usage: {% render 'ona-product-card', product: product %}
+  v2: includes variant picker and add-to-cart button
 {%- endcomment -%}
 {%- if product.handle != 'ona-tote' -%}
 {%- assign v0 = product.selected_or_first_available_variant -%}

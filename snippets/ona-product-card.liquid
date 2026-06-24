@@ -8,7 +8,13 @@
 <div class="list wowo fadeInUp" data-ona-card data-product-id="{{ product.id }}">
   <a href="{{ product.url }}" class="list-box">
     <div class="img">
-      <img src="{{ product.featured_media | img_url: '1024x1024' }}" alt="{{ product.featured_image.alt | default: product.title | escape }}">
+      {%- assign _feat = product.featured_image -%}
+      <img src="{{ product.featured_media | img_url: '1024x1024' }}"
+           width="{{ _feat.width | default: 1024 }}"
+           height="{{ _feat.height | default: 1024 }}"
+           loading="lazy"
+           decoding="async"
+           alt="{{ _feat.alt | default: product.title | escape }}">
     </div>
 
     <div class="text">

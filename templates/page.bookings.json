@@ -7,9 +7,16 @@
     "training_iframe": {
       "type": "ona-training-iframe",
       "settings": {}
+    },
+    "sr_heading": {
+      "type": "ona-sr-heading",
+      "settings": {
+        "text": ""
+      }
     }
   },
   "order": [
+    "sr_heading",
     "bookings_top",
     "training_iframe"
   ]

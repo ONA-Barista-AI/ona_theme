@@ -680,9 +680,16 @@
         "08a3ca8a-21f1-4b29-83e9-b276ae55665a",
         "363d6f41-bd60-44d0-8135-a26cdf7b2130"
       ]
+    },
+    "sr_heading": {
+      "type": "ona-sr-heading",
+      "settings": {
+        "text": ""
+      }
     }
   },
   "order": [
+    "sr_heading",
     "wholesale_partnership",
     "wholesale_sourcing_v2",
     "icon_and_content",

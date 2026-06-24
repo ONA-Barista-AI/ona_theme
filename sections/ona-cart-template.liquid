@@ -13,7 +13,10 @@
       </a>
     </div>
 
-    {%- render 'qikify-reward-bar' -%}
+    {%- comment -%} CLS fix: reserve vertical space for qikify reward bar (injected by JS) so cart rows below don't shift when it appears. 44px ≈ rendered bar height. {%- endcomment -%}
+    <div class="cart-reward-bar-slot" style="min-height:44px">
+      {%- render 'qikify-reward-bar' -%}
+    </div>
 
     <form action="{{ routes.cart_url }}" method="post" novalidate class="cart" id="cart-form">
       <table>
@@ -33,7 +36,9 @@
               <td class="cart__meta small--text-left">
                 <div class="cart__product-information">
                   <div class="cart__image-wrapper">
-                    <img class="cart__image{% if item.image == null %} hide{% endif %}" src="{{ item | img_url: 'x190' }}" alt="{{ item.image.alt | escape }}">
+                    {%- assign _ar = item.image.aspect_ratio | default: 1 -%}
+                    {%- assign _w = _ar | times: 190 | round -%}
+                    <img class="cart__image{% if item.image == null %} hide{% endif %}" src="{{ item | img_url: 'x190' }}" width="{{ _w }}" height="190" loading="lazy" decoding="async" alt="{{ item.image.alt | escape }}">
                   </div>
                   <div>
                     <div class="list-view-item__title">
@@ -194,7 +199,7 @@
   </div>
 
   <div class="empty-page-content{% if cart.item_count > 0 %} hide{% endif %} text-center" data-empty-page-content>
-    <img class="empty-cart-svg" src="{{ 'crying-beans.gif' | asset_url }}" alt="empty cart">
+    <img class="empty-cart-svg" src="{{ 'crying-beans.gif' | asset_url }}" width="150" height="150" loading="eager" decoding="async" alt="empty cart">
     <h1>Your cart</h1>
     <p class="cart--empty-message">Your cart is currently empty.</p>
     <div class="cookie-message">

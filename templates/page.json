@@ -54,9 +54,16 @@
         "padding-block-start": 40,
         "padding-block-end": 80
       }
+    },
+    "sr_heading": {
+      "type": "ona-sr-heading",
+      "settings": {
+        "text": ""
+      }
     }
   },
   "order": [
+    "sr_heading",
     "main"
   ]
 }

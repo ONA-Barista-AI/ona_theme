@@ -49,7 +49,17 @@ This is not a funnel-configuration artifact — confirmed in open-funnel mode (n
 
 This would explain the pattern precisely: `begin_checkout` and `purchase` map to checkout-created/order-created events that fire regardless of which UI path the customer takes; the two granular mid-checkout events depend on a step structure that a large and growing share of traffic (Shop Pay users) never goes through.
 
-**Not yet confirmed, worth checking next:** what fraction of ONA's checkout sessions are Shop Pay-routed vs. classic multi-step checkout (Shopify Admin → Analytics, or Shop Pay's own reporting) — that would confirm whether this fully explains the near-zero count or only partially.
+**Confirmed — Shop Pay is ~47% of all orders.** Pulled Shopify's "Shop Pay payments" report (`FROM payments ... GROUP BY is_shop_pay_transaction`), year to date:
+
+| | Orders (YTD) | Net payments |
+|---|---|---|
+| Shop Pay | 8,386 | A$846,843.12 |
+| Not Shop Pay | 9,429 | A$942,819.23 |
+| **Total** | **17,815** | **A$1,789,662.35** |
+
+Shop Pay = 8,386 / 17,815 = **47.1% of all orders**. Given the one-page flow structurally has no discrete shipping/payment confirmation steps, this is very likely the dominant cause of the near-zero `add_shipping_info`/`add_payment_info` counts — not a small edge case, but close to half of all completed orders.
+
+Side note: Shopify's own order count (17,815 YTD) is far higher than GA4's `purchase` count (~5,500 YTD) — a large, separate GA4 undercounting gap (ad blockers / tracking prevention / consent) worth flagging but out of scope for this specific investigation.
 
 ---
 
@@ -64,5 +74,5 @@ This would explain the pattern precisely: `begin_checkout` and `purchase` map to
 
 1. **Ship the #20 ATC fix.** This is the only *currently active, code-fixable* leak in the data. Directly addresses the 22.4%→27.4% and 40.9%→44.9% gaps between the last-28-days and YTD baseline.
 2. **Re-pull this same funnel after #20 ships** to confirm the pre-cart steps recover toward YTD average — validates the fix with data rather than assuming it worked.
-3. **Confirm the Shop Pay hypothesis** — check what share of checkout sessions route through `shop.app` vs. classic checkout, and check whether Shop Pay's own pixel/reporting shows shipping/payment-stage behavior GA4 misses entirely.
-4. **Decide if the checkout-tracking gap is worth closing at all** — if Shop Pay's one-page flow structurally can't emit two separate events, the fix may be "accept it, rely on begin_checkout→purchase as the checkout-stage metric" rather than chasing a technical fix that fights the UI's actual shape.
+3. **Accept the checkout-tracking gap rather than chase it as a bug.** With Shop Pay at 47% of orders and structurally unable to emit discrete shipping/payment events, `begin_checkout → purchase` (both of which fire regardless of path) is the right checkout-stage metric to rely on — not `add_shipping_info`/`add_payment_info`. Don't spend engineering time trying to force those two events to fire.
+4. **Separately worth a look:** the GA4-vs-Shopify order-count gap (~5,500 vs ~17,815 YTD) is large enough that any GA4-based revenue/conversion number in reporting should be treated as directional, not absolute — Shopify's own analytics/orders count is the more reliable source for anything revenue-related.

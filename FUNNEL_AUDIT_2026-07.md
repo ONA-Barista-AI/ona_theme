@@ -130,6 +130,18 @@ Re-pulled from the Events report (not the funnel-exploration tool), segmented by
 
 A 12.7-point gap — close to the 2026-07-25 draft's 41%/52% estimate (which came from the now-distrusted funnel tool). Unlike the absolute step counts in Finding 4, this particular *ratio* held up under re-verification. Mobile genuinely converts add-to-cart → begin-checkout noticeably worse than desktop; worth keeping as a real, standing gap to watch when #20 ships (mobile add-to-cart was hit harder by the May 27–29 regression too — see Timeline correlation).
 
+### 12. Shopify Plus does not currently offer a one-page/multi-page checkout toggle — that lever is gone
+
+Felipe asked whether Plus's deeper checkout control could resolve Hypothesis B (the `add_shipping_info` gap) via a multi-step checkout layout, which Plus merchants used to be able to choose under the legacy checkout.liquid system. Checked directly: Settings → Checkout (`ONA Coffee configuration`) has no layout toggle anywhere — Customer contact method, Customer information, Marketing opt-in, Tipping, Post-purchase page, Address collection, Advanced preferences, Checkout rules. The checkout editor confirms the same thing structurally: Contact, Payment, Billing address, and the Pay Now action are all grouped under one "Main" section with no separate page for Shipping/Information. This store is on Shopify's modern Checkout Extensibility platform, which **standardized every store — Plus included — onto the single-page layout**; the old Plus-exclusive three-page option no longer exists to switch back to. This closes off that path for Hypothesis B — the DebugView test is still the way to resolve it.
+
+(One legacy holdover still present: an "Additional scripts" field under Post-purchase page, currently populated with a plain shipping-delay notice. This only runs on the order-status/thank-you page, not the live checkout steps, so it isn't a lever for firing `add_shipping_info` either — Shopify locked down script injection on the checkout steps themselves years ago for PCI reasons.)
+
+### 13. "Buy with Shop" does not skip add-to-cart — confirmed, it's a real cart add
+
+Tested directly: read `/cart.js` before (3 items, no Aspen) and after clicking "Buy with Shop" on the Aspen product page. Aspen joined the existing cart as a genuine 4th line item (`item_count` 3 → 4) before landing on checkout — it isn't an isolated single-item buy-now flow that bypasses the cart. Since Finding 5 already established the main product page uses Shopify's native `<product-form-component>` (no custom tracking-breaking code), and "Buy with Shop" clearly routes through that same add-to-cart mechanism, there's no reason to think it behaves differently from the regular "Add to cart" button for tracking purposes. Not a source of additional undercounting.
+
+Side observation from this same test: the plain checkout button's Shop Pay auto-redirect (Finding 3) really is inconsistent — this "Buy with Shop" click went straight to classic multi-field checkout with no shop.app hop at all, on the same browser session that redirected to Shop Pay earlier. Reinforces the Finding 3/Hypothesis D note that this isn't a reliable "always redirects" behavior.
+
 ---
 
 ## Unproven hypotheses (with a validation plan)

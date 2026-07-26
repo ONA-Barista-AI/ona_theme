@@ -144,6 +144,24 @@ Tested directly: read `/cart.js` before (3 items, no Aspen) and after clicking "
 
 Note: this test's "Buy with Shop" click landed on classic checkout with no Shop Pay redirect, which at the time looked like it contradicted Finding 3. It didn't — see the correction in Finding 3. This test added to an already-existing cart/checkout session rather than starting fresh, so it never hit the redirect decision point in the first place. The cart-merge conclusion above (item_count 3→4) is unaffected by this; only the redirect-behavior side note was wrong.
 
+### 14. Mobile-vs-desktop gap independently confirmed by Shopify's own session data — not a GA4 artifact
+
+Given today's GA4 reliability issues (Finding 4), Finding 11's mobile-vs-desktop gap was worth cross-checking against a completely different measurement system. Shopify's own "Conversion rate breakdown" report (`FROM sessions`, not GA4/gtag at all) for the same Jan 1 – Jul 26, 2026 window, grouped by device:
+
+| Device | Sessions | Added to cart | Reached checkout | Step conversion |
+|---|---|---|---|---|
+| Desktop | 77,255 | 8,444 | 7,798 | 92.3% |
+| Mobile | 215,631 | 19,249 | 15,640 | 81.3% |
+| Tablet | 1,607 | 171 | 129 | 75.4% (small sample) |
+
+An 11-point gap between desktop and mobile — different absolute numbers than GA4's (Shopify's "reached checkout" definition is looser than GA4's `begin_checkout`, hence the much higher conversion rates overall), but the **same direction and a very similar magnitude** to Finding 11's 12.7-point GA4 gap. Two independent measurement systems — one client-side event tracking (GA4), one first-party session tracking (Shopify) — agree: mobile converts add-to-cart → checkout meaningfully worse than desktop. This is now a well-corroborated finding, not just a GA4-reported number.
+
+Checked whether the same device breakdown exists for completed *orders* specifically (not just sessions) — it doesn't. Device type is only available as a dimension on Shopify's `sessions` data, not on `sales`/orders; "sessions that completed checkout by device" (Desktop 4,387, Mobile 9,424, Tablet 88 — same report) is the closest equivalent Shopify's analytics can produce.
+
+### 15. Sales by channel revisited — no new pattern beyond Finding 8
+
+Re-checked orders by sales channel for the same period to see if a channel-level pattern would explain any of the above: Online Store 15,218, Appstle Subscription 2,229, Shop (app) 354 — same breakdown as Finding 8, confirmed stable. Nothing new here; the channel mix doesn't interact with the device gap in a way visible from Shopify's side (device isn't queryable against sales/channel jointly, per the note above).
+
 ---
 
 ## Unproven hypotheses (with a validation plan)

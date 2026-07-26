@@ -27,11 +27,13 @@ All five are open GitHub issues on `ONA-Barista-AI/ona_theme`, each independentl
 
 Not a filed issue yet. Adding a product from its own product page does not open a cart drawer or show any confirmation — the item is added silently (badge count increments, no visual feedback). Reproduced on two different products (Raspberry Candy, Maple) — not a one-off glitch. This is on `ona-product-information.liquid`, a different file from #20's collection-page drawer bug, and not yet root-caused in code. Worth filing as its own issue: it affects the primary single-product purchase path, not just collection quick-add, so it's plausibly as high-value as #20.
 
-### 3. Standard "Check Out" auto-redirects to Shop Pay, not just the express button
+### 3. Fresh checkouts auto-redirect to Shop Pay for a recognized customer — reliably, not randomly
 
-Live-tested: for a recognized/returning customer, clicking the plain **"CHECK OUT"** button on the `/cart` page — not the purple "Buy with Shop" express button — still lands on `shop.app/checkout/.../shoppay` with `redirect_source=checkout_automatic_redirect`, pre-filled with a real saved card and address, one tap from "Pay now." A "Check out as guest" link is present and does drop into the classic multi-step checkout.
+Live-tested: for a recognized/returning customer, clicking the plain **"CHECK OUT"** button on the `/cart` page — not the purple "Buy with Shop" express button — lands on `shop.app/checkout/.../shoppay` with `redirect_source=checkout_automatic_redirect`, pre-filled with a real saved card and address, one tap from "Pay now." A "Check out as guest" link is present and does drop into the classic multi-step checkout.
 
-This means there is effectively no direct path to classic checkout for a recognized shopper — they either complete via Shop Pay or have to notice and click "Check out as guest." Relevant context for the Shop Pay share number in Finding 6.
+**Correction to an earlier note in this doc:** a previous version of this finding said the redirect looked non-deterministic — one test skipped it entirely. That test is now understood to be an artifact, not a real finding: every checkout attempt in that session reused the *same* checkout object (same `cn/...` token in the URL) because items kept getting added to one ongoing cart rather than starting fresh. A checkout that's already past the redirect decision point won't re-trigger it. Felipe independently ran the clean version of this test — emptied the cart, then a genuinely fresh "Buy with Shop" click — and it redirected to Shop Pay. Treat the redirect as reliable for a fresh checkout with a recognized/logged-in customer, not as a coin flip.
+
+This means there is effectively no direct path to classic checkout for a recognized shopper on a fresh session — they either complete via Shop Pay or have to notice and click "Check out as guest." Relevant context for the Shop Pay share number in Finding 6, and for how to interpret Hypothesis B: the classic checkout tested there is the *less common* path for a recognized customer, reached only by deliberately opting out of Shop Pay — Shop Pay's one-page UI is what most fresh-session recognized customers actually see by default.
 
 ### 4. The GA4 funnel-exploration tool was undercounting — badly, and increasingly at each step
 
@@ -140,7 +142,7 @@ Felipe asked whether Plus's deeper checkout control could resolve Hypothesis B (
 
 Tested directly: read `/cart.js` before (3 items, no Aspen) and after clicking "Buy with Shop" on the Aspen product page. Aspen joined the existing cart as a genuine 4th line item (`item_count` 3 → 4) before landing on checkout — it isn't an isolated single-item buy-now flow that bypasses the cart. Since Finding 5 already established the main product page uses Shopify's native `<product-form-component>` (no custom tracking-breaking code), and "Buy with Shop" clearly routes through that same add-to-cart mechanism, there's no reason to think it behaves differently from the regular "Add to cart" button for tracking purposes. Not a source of additional undercounting.
 
-Side observation from this same test: the plain checkout button's Shop Pay auto-redirect (Finding 3) really is inconsistent — this "Buy with Shop" click went straight to classic multi-field checkout with no shop.app hop at all, on the same browser session that redirected to Shop Pay earlier. Reinforces the Finding 3/Hypothesis D note that this isn't a reliable "always redirects" behavior.
+Note: this test's "Buy with Shop" click landed on classic checkout with no Shop Pay redirect, which at the time looked like it contradicted Finding 3. It didn't — see the correction in Finding 3. This test added to an already-existing cart/checkout session rather than starting fresh, so it never hit the redirect decision point in the first place. The cart-merge conclusion above (item_count 3→4) is unaffected by this; only the redirect-behavior side note was wrong.
 
 ---
 
@@ -157,7 +159,7 @@ The Shop Pay one-page-UI theory from the earlier draft doesn't fully hold now th
 *Remaining validation step:* a proper GA4 DebugView session (not just network/hook instrumentation) would give a definitive answer and is worth 10 minutes before concluding this is a Shopify-side gap not worth theme engineering time.
 
 **D. Guest/first-time-visitor checkout experience.**
-Today's checkout walkthrough (Finding 9) was done from Felipe's own browser — a recognized session with a saved card, saved address, and pre-filled name. A true first-time visitor's experience (empty fields, no express-checkout recognition, unfamiliar layout) was not independently tested. Also noticed today: the plain "Check Out" button's behavior isn't deterministic — it auto-redirected to Shop Pay on one attempt and went straight to classic checkout on a later attempt from the same session, so Finding 3 shouldn't be read as "always redirects."
+Today's checkout walkthrough (Finding 9) was done from Felipe's own browser — a recognized session with a saved card, saved address, and pre-filled name. A true first-time visitor's experience (empty fields, no express-checkout recognition, unfamiliar layout) was not independently tested. Per Finding 3, a fresh checkout for a recognized customer reliably redirects to Shop Pay — a genuine first-time visitor with no saved Shop account would be the case most likely to actually land on classic checkout by default, so this hypothesis and Finding 3 are closely related.
 *Validation plan:* repeat the walkthrough in a clean/incognito session, or have someone who's never visited the site test the flow and note friction points.
 
 ---

@@ -1,78 +1,162 @@
 # ONA Coffee — Funnel & Checkout Conversion Audit
-**Date:** 2026-07-26
+**Date:** 2026-07-26 (research phase — Felipe takes direct control of the site 2026-07-30)
 **Branch:** `felipe/funnel-conversion-audit` (off `main`, no collision with other dev work)
-**Scope:** End-to-end funnel data pull (GA4), checkout-tracking gap root cause, correlation with known theme bugs
+**Scope:** End-to-end funnel data pull (GA4 + Shopify), checkout-tracking gap root cause, live checkout UX walkthrough, correlation with known theme bugs
+
+This version replaces the funnel numbers from the 2026-07-25 draft. Re-pulling the same period through a different GA4 report surfaced that the original numbers were undercounted — see Finding 4. Everything below is either a **confirmed finding** (verified today, evidence included) or a **hypothesis** (stated as such, with what would prove or disprove it).
 
 ---
 
-## 1. The funnel, year-to-date (GA4, Jan 1 – Jul 25 2026)
+## Confirmed findings
 
-| Step | Users | Step conversion |
+### 1. Five theme bugs, code-verified against the live site
+
+All five are open GitHub issues on `ONA-Barista-AI/ona_theme`, each independently confirmed against the live site or the actual live-rendering template code (not just the repo — see Finding 5 on why that distinction matters):
+
+| # | Issue | Verified live? |
 |---|---|---|
-| Session start | 155,141 | — |
-| View product | 72,650 | 46.8% |
-| Add to cart | 19,932 | 27.4% |
-| Begin checkout | 8,952 | 44.9% |
-| Purchase | 5,537 | 61.9% |
+| [#20](https://github.com/ONA-Barista-AI/ona_theme/issues/20) CRITICAL | Collection-page add-to-cart: drawer never opens, badge flashes white, badge invisible pre-scroll | Yes — all 3 bugs reproduced live |
+| [#11](https://github.com/ONA-Barista-AI/ona_theme/issues/11) HIGH | Collection-page quick-add bypasses Shopify's tracking layer — Meta/GA4 `add_to_cart` never fires from that path | Yes — confirmed via live page source, zero `gtag`/`fbq` calls anywhere in the theme |
+| [#18](https://github.com/ONA-Barista-AI/ona_theme/issues/18) HIGH | Product labels: date-comparison bug hides active "New In" tags; homepage featured section never reads per-product labels | Yes |
+| [#21](https://github.com/ONA-Barista-AI/ona_theme/issues/21) MED | Hero preload tag missing `href` (confirmed via the section's own code comment, `CANARY-R33`, matched on the live page); product card images have no `srcset` | Yes |
+| [#19](https://github.com/ONA-Barista-AI/ona_theme/issues/19) MED | `og:image` served over `http://` sitewide; collection pages show the generic site banner instead of collection imagery | Yes |
 
-**Last 28 days vs. YTD average — both pre-cart steps are currently underperforming:**
-- View product → Add to cart: 22.4% (28d) vs 27.4% (YTD)
-- Add to cart → Begin checkout: 40.9% (28d) vs 44.9% (YTD)
-- Begin checkout → Purchase: 59.2% (28d) — in line with YTD, checkout completion itself is not degraded
+\#13 (missing JSON-LD) was deleted — false positive, Shopify injects it at the platform level regardless of theme code. #16 (locations page title) is closed, fixed directly in Shopify admin.
 
-**Device split (YTD):** mobile is 70% of sessions but converts add-to-cart → begin-checkout at ~41%, vs. desktop's ~52% — an 11-point gap consistent with the original finding that the May 27–29 commits hit mobile cart-adds harder (-48%) than desktop (-43%).
+### 2. Cart drawer doesn't open on the *product* page either
 
-**Read:** the active, currently-unfixed leak is pre-checkout (view→cart, cart→checkout), not checkout itself. This points at issue #20 (cart ATC bugs) as the highest-value fix, not a checkout redesign.
+Not a filed issue, noticed during today's live walkthrough: adding "Raspberry Candy" from its own product page did not open a cart drawer or show any confirmation — the item was added silently (badge count incremented, no visual feedback). This is on `ona-product-information.liquid`, a different file from #20's collection-page drawer bug. Not yet root-caused or filed. **Hypothesis, not a finding** — needs a repeat test to rule out a one-off render glitch before filing.
 
----
+### 3. Standard "Check Out" auto-redirects to Shop Pay, not just the express button
 
-## 2. New finding: checkout-stage GA4 events are structurally blind
+Live-tested: for a recognized/returning customer, clicking the plain **"CHECK OUT"** button on the `/cart` page — not the purple "Buy with Shop" express button — still lands on `shop.app/checkout/.../shoppay` with `redirect_source=checkout_automatic_redirect`, pre-filled with a real saved card and address, one tap from "Pay now." A "Check out as guest" link is present and does drop into the classic multi-step checkout.
 
-Pulled the "Checkout journey" funnel (`begin_checkout → add_shipping_info → add_payment_info → purchase`) in both closed and open-funnel mode, full year:
+This means there is effectively no direct path to classic checkout for a recognized shopper — they either complete via Shop Pay or have to notice and click "Check out as guest." Relevant context for the Shop Pay share number in Finding 6.
 
-| Event | Count (Jan 1 – Jul 25, 2026) |
-|---|---|
-| begin_checkout | 10,817 |
-| add_shipping_info | **0** |
-| add_payment_info | **2** |
-| purchase | 5,053+ (varies by funnel mode; real purchases clearly happen) |
+### 4. The GA4 funnel-exploration tool was undercounting — badly, and increasingly at each step
 
-This is not a funnel-configuration artifact — confirmed in open-funnel mode (no sequential requirement) across the full year. Real orders are being placed; GA4 simply never records the shipping or payment sub-step.
+The 2026-07-25 draft's funnel numbers (Session start 155,141 → View product 72,650 → Add to cart 19,932 → Begin checkout 8,952 → Purchase 5,537) came from GA4's **Funnel exploration** report. Today, pulling the same Jan 1 – Jul 26, 2026 window from the plain **Events** report (`event_name` × `Total users`, no funnel machinery) gives materially different numbers:
 
-### Root cause investigation
+| Step | Funnel-exploration tool (2026-07-25) | Events report (2026-07-26, verified) | Difference |
+|---|---|---|---|
+| Session start | 155,141 | 156,855 | ~1%, consistent |
+| View item | 72,650 | 73,033 | ~1%, consistent |
+| Add to cart | 19,932 | 23,816 | +19% |
+| Begin checkout | 8,952 | 10,922 | +22% |
+| Purchase | 5,537 | 11,439 | **+107%** |
 
-**Ruled out — theme code.** Cloned `ona_theme` and searched for every relevant term (`add_shipping_info`, `add_payment_info`, `checkout_started`, `checkout_completed`, `shipping_info_submitted`, `payment_info_submitted`, `gtag(`, `fbq(`, `dataLayer.push(`): zero matches anywhere except `snippets/pagefly-main-js.liquid`, which is PageFly's own gtag setup, gated on `shop.metafields.pagefly.measurementId` — already confirmed `null`/dead in the original audit (closed issue #12). `layout/theme.liquid` has no analytics code at all; the real tracking is 100% Shopify platform-level injection via `content_for_header`. **No theme commit, at any date, could have caused or fixed this — there's nothing in this repo to correlate against.**
+The gap widens the deeper into the funnel you go — classic symptom of GA4's funnel tool enforcing strict in-session step ordering even when "open funnel" is toggled, or of session/attribution boundaries (e.g. the Shop Pay cross-domain hop to `shop.app`) breaking the "same session, in order" requirement the funnel tool quietly still applies. **This was not caught in the 2026-07-25 pull** — the report's own text claimed the numbers were "confirmed in open-funnel mode," which turned out not to be reliable.
 
-**Checked — Shopify Admin, Customer Events.** The "Google & YouTube" pixel is Active, both Server and Web channels on, data access "Optimized," connected to the correct GA4 property (`G-QX88TBZC3G`, "ONA Coffee"). Nothing misconfigured on the surface.
+**Corrected YTD funnel (Events report, Jan 1 – Jul 26, 2026):**
 
-**Found — likely actual cause: Shop Pay auto-redirect.** Live-tested an actual add-to-cart → checkout flow. For a recognized Shop Pay user, `/checkout` **automatically redirects** to `shop.app/checkout/.../shoppay` (`redirect_source=checkout_automatic_redirect`) — a different domain entirely from `onacoffee.com.au`. Shop Pay's accelerated flow presents shipping address, shipping method, and payment method all on **one screen** with a single "Pay now" — there is no discrete "confirm shipping" step followed by a separate "confirm payment" step for the platform to fire two distinct events from. Standard multi-step Shopify checkout has these as separate pages/steps; Shop Pay's condensed UI structurally doesn't. For any customer who gets auto-routed into Shop Pay (which is common for returning customers — this test session had a saved address and card ready instantly), `add_shipping_info` and `add_payment_info` likely never have a discrete moment to fire.
+| Step | Users | Step-over-step conversion |
+|---|---|---|
+| Session start | 156,855 | — |
+| View item | 73,033 | 46.6% |
+| Add to cart | 23,816 | 32.6% |
+| Begin checkout | 10,922 | 45.9% |
+| Purchase | 11,439 | 104.7% ⚠️ |
 
-This would explain the pattern precisely: `begin_checkout` and `purchase` map to checkout-created/order-created events that fire regardless of which UI path the customer takes; the two granular mid-checkout events depend on a step structure that a large and growing share of traffic (Shop Pay users) never goes through.
+The begin_checkout → purchase figure exceeding 100% is real in the data (not a typo) and is itself an open question — see Hypothesis A below.
 
-**Confirmed — Shop Pay is ~47% of all orders.** Pulled Shopify's "Shop Pay payments" report (`FROM payments ... GROUP BY is_shop_pay_transaction`), year to date:
+**Practical takeaway:** every previously-reported GA4 funnel-exploration number in the 2026-07-25 draft (including the mobile-vs-desktop split and the last-28-days-vs-YTD comparison) was pulled with the same tool and should be treated as unverified until re-pulled the same way as above. Going forward, pull funnel numbers from the plain Events report, not the Funnel exploration UI, unless the funnel tool's output is cross-checked against it first.
 
-| | Orders (YTD) | Net payments |
+### 5. `ona-product-template.liquid` is dead code — the whole reason #11/#20 needed re-scoping
+
+Confirmed via `templates/product.json` and every legacy `product.*.liquid` template in the repo: none of them reference `ona-product-template.liquid`. The live main product page renders `ona-product-information.liquid` instead, using Shopify's native `<product-form-component>` — a different, platform-standard component with no custom tracking code to break. This is why #11 and #20 were corrected to scope only to `ona-collection-template.liquid` (the file that *is* live-wired, via `templates/collection.json`).
+
+### 6. Checkout-stage GA4 events, re-measured correctly
+
+Same Events report, same period:
+
+| Event | Users | Events | As % of purchase (11,439 / 12,434) |
+|---|---|---|---|
+| begin_checkout | 10,922 | 19,948 | — |
+| add_shipping_info | **0** | **0** | **0%** |
+| add_payment_info | 4,639 | 7,976 | 64% (of event count) |
+| purchase | 11,439 | 12,434 | 100% |
+
+`add_payment_info` is **not** the near-zero the earlier draft reported (it had said "2" — that number came from the same unreliable funnel-exploration tool). At 64% coverage relative to purchase count, it's firing at a normal rate for a client-side pre-purchase event. `add_shipping_info` is the real, standout gap: confirmed genuinely zero for the entire year, no funnel-mode ambiguity involved this time (plain event count).
+
+This meaningfully weakens the "Shop Pay's one-page UI structurally prevents these events" theory from the earlier draft — if that were the whole story, `add_payment_info` should also be suppressed for the ~47% of orders going through Shop Pay, capping its coverage well below what's observed. It doesn't explain why `add_shipping_info` specifically is at zero while `add_payment_info` fires normally. See Hypothesis B.
+
+### 7. Shop Pay is 47.1% of orders (unaffected by the funnel-tool issue — this came from Shopify, not GA4)
+
+Shopify's "Shop Pay payments" report, YTD:
+
+| | Orders | Net payments |
 |---|---|---|
 | Shop Pay | 8,386 | A$846,843.12 |
 | Not Shop Pay | 9,429 | A$942,819.23 |
 | **Total** | **17,815** | **A$1,789,662.35** |
 
-Shop Pay = 8,386 / 17,815 = **47.1% of all orders**. Given the one-page flow structurally has no discrete shipping/payment confirmation steps, this is very likely the dominant cause of the near-zero `add_shipping_info`/`add_payment_info` counts — not a small edge case, but close to half of all completed orders.
+### 8. The GA4-vs-Shopify order gap is real but much smaller than first thought
 
-Side note: Shopify's own order count (17,815 YTD) is far higher than GA4's `purchase` count (~5,500 YTD) — a large, separate GA4 undercounting gap (ad blockers / tracking prevention / consent) worth flagging but out of scope for this specific investigation.
+Shopify orders by sales channel, YTD (ShopifyQL, `FROM sales GROUP BY sales_channel`):
+
+| Channel | Orders | Net sales |
+|---|---|---|
+| Online Store | 15,218 | A$1,558,802.47 |
+| Appstle Subscription | 2,229 | A$153,516.73 |
+| Shop (app) | 354 | A$34,278.93 |
+| **Total** | **17,801** | **A$1,746,598.13** |
+
+Appstle Subscription and Shop-app orders (2,583 total) are recurring/automated charges or a separate app channel — GA4 correctly wouldn't count these as storefront `purchase` events, so **Online Store (15,218) is the right comparison** against GA4's 11,439 purchasing users / 12,434 purchase events (from Finding 4/6, not the earlier draft's ~5,500).
+
+- Gap: 15,218 − 12,434 = **2,784 orders (18.3%)**
+- Revenue gap: $1,558,802.47 − $1,292,526.05 = **$266,276.42 (17.1%)**
+
+This is in the ordinary range for ad-blocker/consent-mode/cross-domain tracking loss — not the near-total measurement failure the 2026-07-25 draft implied (which had compared Shopify's *total* 17,815 against GA4's under-measured ~5,500, a comparison that stacked two separate errors).
+
+### 9. Checkout UX, live-walked (from a recognized/returning session — see caveat under Hypothesis D)
+
+- **Guest checkout:** available via "Check out as guest," reachable from the Shop Pay screen.
+- **Shipping cost transparency:** cart page shows a progress bar toward $120 free *express* shipping; at the checkout step, standard shipping showed clearly as "Free Domestic Standard (3-6 business days after dispatch) — FREE," with cost stated before any payment fields.
+- **Payment methods surfaced:** Express row — Shop Pay, PayPal, Google Pay. Payment section — Credit card (Visa/Mastercard/Amex + 2 more), PayPal, Afterpay. Apple Pay did not appear (expected — this was a non-Safari browser, not a bug).
+- **Field count:** standard credit-card fields (card number, expiry, CVC, name) plus a pre-checked "use shipping address as billing" toggle that removes a full second address form for most shoppers.
+
+### 10. Microsoft Clarity is not actually installed
+
+The earlier assumption that Clarity was "confirmed installed" was wrong. Opening the Clarity app in Shopify admin today landed on a fresh onboarding screen ("How would you like to set up Clarity?"), not a dashboard — meaning **no heatmap or session-recording data exists to review**. Did not click through setup: the recommended option bundles a new "Clarity with Brand Agents" AI shopping assistant with its own Terms of Use, which is a real decision, not a default to click past.
 
 ---
 
-## 3. Timeline correlation
+## Unproven hypotheses (with a validation plan)
 
-- `ona_theme` repo has exactly 4 commits, oldest dated **2026-05-27**. The Formswell commits that broke ATC (issue #20) landed **2026-05-27 to 05-29** — directly correlates with the pre-cart funnel steps currently running below their YTD average.
-- The checkout-event gap (add_shipping_info/add_payment_info) shows **zero events since Jan 1, 2026** — i.e. before the repo's own history even begins, and unrelated to any theme commit. It is not a regression from a specific date; it appears to be structural (Shop Pay's UI shape), not a break.
+**A. `purchase` users (11,439) exceed `begin_checkout` users (10,922) in the same window.**
+Not a typo — reproduced in two separate reports (Events report and Transactions report). Possible causes: users completing checkout in a session-boundary-crossing way that doesn't get attributed back to a `begin_checkout` in the same window (e.g. an abandoned-cart email bringing someone back straight to a saved Shop Pay confirmation), or a `purchase` event firing from a non-`begin_checkout`-preceded path.
+*Validation plan:* pull `purchase`-event sessions by landing page / session source; check specifically whether Shop Pay-completed sessions or email-driven sessions are overrepresented among purchases with no matching `begin_checkout` in the same session.
+
+**B. Why `add_shipping_info` is at zero when `add_payment_info` fires normally.**
+The Shop Pay one-page-UI theory from the earlier draft doesn't fully hold now that `add_payment_info` (64% coverage) looks normal. It's possible this specific event simply isn't wired up in Shopify's current checkout-extensibility configuration for *any* path, Shop Pay or classic.
+*Validation plan:* run a live GA4 DebugView session through the classic (non-Shop-Pay, "check out as guest") checkout and watch whether `add_shipping_info` fires at all on that path. If it doesn't fire even in classic checkout, this points to a Shopify/GA4 pixel-configuration gap rather than a Shop Pay-specific limitation, and is worth a support conversation with Shopify rather than a theme fix (there's no theme code involved either way — see Finding 4/#12's precedent).
+
+**C. Mobile vs. desktop conversion gap (previously reported as 41% vs 52% add-to-cart→checkout).**
+This number came from the same funnel-exploration tool now known to undercount. Not re-verified this session.
+*Validation plan:* re-pull device-segmented add_to_cart → begin_checkout using the Events report methodology (Finding 4) before treating this gap as real or sizing it.
+
+**D. Guest/first-time-visitor checkout experience.**
+Today's checkout walkthrough (Finding 9) was done from Felipe's own browser — a recognized session with a saved card, saved address, and pre-filled name. A true first-time visitor's experience (empty fields, no express-checkout recognition, unfamiliar layout) was not independently tested.
+*Validation plan:* repeat the walkthrough in a clean/incognito session, or have someone who's never visited the site test the flow and note friction points.
+
+**E. Cart drawer not opening on the product page (Finding 2).**
+Single observation, not yet repeated or filed as an issue.
+*Validation plan:* repeat the add-to-cart action on 2-3 different products/variants to confirm it's consistent before filing.
 
 ---
 
-## 4. Recommendations, in priority order
+## Timeline correlation
 
-1. **Ship the #20 ATC fix.** This is the only *currently active, code-fixable* leak in the data. Directly addresses the 22.4%→27.4% and 40.9%→44.9% gaps between the last-28-days and YTD baseline.
-2. **Re-pull this same funnel after #20 ships** to confirm the pre-cart steps recover toward YTD average — validates the fix with data rather than assuming it worked.
-3. **Accept the checkout-tracking gap rather than chase it as a bug.** With Shop Pay at 47% of orders and structurally unable to emit discrete shipping/payment events, `begin_checkout → purchase` (both of which fire regardless of path) is the right checkout-stage metric to rely on — not `add_shipping_info`/`add_payment_info`. Don't spend engineering time trying to force those two events to fire.
-4. **Separately worth a look:** the GA4-vs-Shopify order-count gap (~5,500 vs ~17,815 YTD) is large enough that any GA4-based revenue/conversion number in reporting should be treated as directional, not absolute — Shopify's own analytics/orders count is the more reliable source for anything revenue-related.
+- `ona_theme` repo has 4 commits, oldest 2026-05-27. The commits that broke ATC (#20) landed 2026-05-27 to 05-29.
+- The `add_shipping_info` gap shows zero events since Jan 1, 2026 — predates the repo's own history entirely, so it's not a regression from a specific commit. Confirmed structural, not a break — though the *specific* reason is still open (Hypothesis B).
+
+---
+
+## Recommendations, in priority order
+
+1. **Ship the #20 ATC fix first.** Everything else in this audit is secondary to this — it's the one *currently active, code-fixable* leak with a clear before/after signal (Finding 4's corrected add-to-cart and begin-checkout numbers give a clean baseline to measure the fix against).
+2. **Re-pull the funnel after #20 ships, using the Events-report method from Finding 4** — not the Funnel exploration tool, which this audit found unreliable.
+3. **Run the DebugView test in Hypothesis B before deciding whether to chase `add_shipping_info` as a bug.** It's cheap to check and determines whether this is a Shopify-side gap (not worth theme engineering time) or something specific to this checkout setup.
+4. **Treat GA4 purchase/revenue numbers as directional, not absolute**, given the confirmed 17-18% gap against Shopify's own Online Store order count (Finding 8) — but this is a normal-sized gap now, not a reason to distrust GA4 broadly.
+5. **Decide on Clarity separately**, now that it's confirmed not installed (Finding 10) — it's a real option for the qualitative side of this audit (Hypothesis D in particular), but the "Brand Agents" bundling needs a deliberate yes/no, not a default click-through.
+6. **Repeat Finding 2 and file if confirmed** — cheap to check, and if real it's likely as high-value as #20 since it affects the primary product-page purchase path, not just collection quick-add.

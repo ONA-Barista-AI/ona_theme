@@ -4,10 +4,10 @@
 **Branch:** `felipe/funnel-conversion-audit`
 **Scope:** Test the hypothesis that organic search visibility/sales are declining and paid spend is masking it in headline revenue.
 
-**Result: two separate, real phenomena, not one.** Felipe's pushback on the first pass of this analysis was correct: "paid cannibalizes organic" is a real, well-documented mechanism for **clicks**, but has no documented mechanism for reducing **impressions** — so a 38% impression drop needed a different explanation. Digging further with keyword-level GSC data, page-level GSC data, and the actual Google Ads account found both things are genuinely happening, for different reasons:
+**Result: two separate, real phenomena, not one — and both are now confirmed, not just hypothesized.** Felipe's pushback on the first pass of this analysis was correct: "paid cannibalizes organic" is a real, well-documented mechanism for **clicks**, but has no documented mechanism for reducing **impressions** — so a 38% impression drop needed a different explanation. Dug further with keyword-level GSC data, page-level GSC data, the Google Ads account, ONA's own OMG correspondence, ONA's own project-tracker risk register, and finally live HTML — both things are genuinely happening, for different reasons, and both are independently corroborated by ONA's own SEO agency:
 
-1. **Click cannibalization on branded search terms** — real, matches the textbook signature exactly, and traces to Performance Max/Shopping campaigns that target branded queries automatically (no manual keyword control exists in this account).
-2. **A much larger impression/visibility collapse concentrated on two pages — the homepage and `/collections/all`** — unrelated to paid ads, still unexplained, and the more urgent problem of the two.
+1. **Click cannibalization on branded search terms** — real, matches the textbook signature exactly, traces to Performance Max/Shopping auto-targeting branded queries (no manual keyword control exists in this account), and **OMG's own July 22 email independently reached the same conclusion** and recommended the same fix.
+2. **A much larger impression/visibility collapse concentrated on two pages — the homepage and `/collections/all`** — unrelated to paid ads. **Confirmed root cause, live:** the homepage's only H1 is a hidden, brand-only fallback (`<h1 class="visually-hidden">ONA Coffee</h1>`) with no keyword content, and `/collections/all` has no body/description copy at all — both exactly matching risks ONA's own project tracker flagged *before* the June 5–6 theme deployment and never confirmed as resolved. See Section 4.
 
 ---
 
@@ -61,6 +61,11 @@ This is the textbook signature, exactly. Clicks down 21–40% on every top brand
 
 **Conclusion on this part:** cannibalization is real, confirmed, and traces to Performance Max auto-targeting branded search — not a deliberate brand-defense campaign. It's a real cost (organic clicks that used to be free are now costing ad spend) but it's a normal, fixable PMax configuration issue, not a crisis — and it does not explain the impression collapse.
 
+**Independently confirmed by OMG (ONA's SEO agency) — checked their July 22, 2026 email** ("Meeting Follow-Up & Next Steps," to Macarena and Felipe): OMG reached this exact conclusion on their own and recommended the exact fix:
+> "we've seen a significant decline in organic traffic since Google Ads launched, and this will help reduce cannibalisation of branded organic traffic... Add 'ONA Coffee' as an exact match negative keyword to the Performance Max and Shopping campaigns... Create a dedicated Brand Search campaign with a limited budget, rather than allowing branded traffic to be captured by the Performance Max and Shopping campaigns."
+
+Two independent investigations — this one from GA4/Shopify/GSC/Ads data, OMG's from whatever they use — landed on the same mechanism and the same fix. As of that email, this action item was still open on ONA's side.
+
 ---
 
 ## 3. The real driver: impressions collapsed on two pages specifically — homepage and `/collections/all`
@@ -91,12 +96,37 @@ These are broad, generic, category-level terms — exactly what a homepage or an
 
 ---
 
+## 4. Root cause found: a known, pre-flagged theme-deployment risk that was never confirmed fixed
+
+Checked ONA's Google Drive (`ONA_Project_WIP_Tracker`, created 2026-05-25) and Gmail for OMG correspondence, per Felipe's request. Both independently point at the same event: a **theme deployment scheduled for June 5–6, 2026** — which lands exactly at the point where GSC impressions took their steepest single-month drop (May 314,589 → June 243,371, -23%).
+
+**OMG's own July 22 email says so directly.** Their action item: *"Complete a deeper technical SEO audit to investigate the recent keyword volatility and identify any technical issues **following the Shopify theme update**."* They're independently pursuing the same timing correlation found here.
+
+**ONA's own project tracker had already flagged the exact two failure modes, before deployment, as unconfirmed risks (status: Not Started):**
+
+> **M9** — 8 collection pages have no SEO copy: `/collections/all`, Matcha, Candy, Reserve, Brew Gear, Merch, Ready to Brew — all blank to Google. *(High priority)*
+>
+> **M10** — Homepage H1 is conditional on theme settings: new theme outputs H1 only if slide title is set. **Must be verified before deployment — not assumed fixed.** *(Medium priority)*
+
+The pre-deployment checklist (`PRE-3`) required four fixes signed off in writing before go-live, one of which was explicitly *"Homepage H1 slide title setting."* Task `1.10`, "Verify post-deployment — live site checklist," was supposed to confirm *"H1 on homepage"* among other things — but nothing in the tracker shows this was ever confirmed done.
+
+**Checked live, right now — both risks are real, present-tense problems:**
+
+- Homepage's only H1 tag is `<h1 class="visually-hidden">ONA Coffee</h1>` — hidden from display, and containing only the brand name, no descriptive/keyword content. This is consistent with the slide-title setting never having been populated, exactly as M10 warned could happen.
+- `/collections/all` has an H1 (`class="collection-title"`) but no description or body-copy block anywhere on the page — confirms M9 as still true today.
+
+This lines up precisely with Section 3's findings: branded search (which doesn't depend on the H1 saying anything beyond the brand name) held up fine, while broad category terms like "coffee," "coffee beans," "espresso beans" — exactly what a real, keyword-rich H1 and collection description would target — collapsed. **This is likely the actual root cause of the entire impression decline in Section 1 and 3**, not a ranking-algorithm shift or reduced demand.
+
+This is a fixable, well-scoped, non-controversial change: give the homepage a real, visible, keyword-relevant H1 (via the slide title setting or a template fix), and write actual collection description copy for `/collections/all` and the other 7 collections M9 flagged. Both were already scoped by OMG/ONA's own team before this ever became urgent.
+
+---
+
 ## Open questions
 
-1. **What changed on the homepage or `/collections/all` around April 2026 to cause this?** Not yet identified. Worth checking: theme/content change history for those two templates in this window (the repo's own commit history starts 2026-05-27, so an earlier change — before the branch's visibility — or a Shopify-admin-side content edit is more likely than a tracked code change), Core Web Vitals for those specific URLs, and whether page title/meta description/structured data changed. This is a real, still-open SEO investigation, separate from anything in the funnel/checkout audit.
-2. **Should Performance Max be configured to exclude brand terms?** Standard PMax doesn't support keyword-level brand exclusion the way Search campaigns do, but brand exclusion lists and account-level negative keywords are possible in some configurations — worth a conversation with whoever manages the Ads account (or Google's own PMax brand controls, which have expanded over time) before assuming nothing can be done.
-3. **Margin impact of the click shift.** ~28–40% of branded clicks that used to be free organic clicks are now costing ad spend via PMax. Worth quantifying the actual CAC delta once full spend data is available — this is a real, quantifiable cost even though it's not the bigger problem.
-4. **Is the homepage/collection-page loss related to anything in the funnel/checkout audit?** #20 (cart ATC regression) landed 2026-05-27–29 — inside this window, but the impression decline was already underway in April, before that commit. Keep these as separate problems; both were degrading performance in the same stretch of time but don't appear causally linked.
+1. **Confirm the H1/description fixes get shipped and re-pull GSC after.** The mechanism is now well-evidenced but not yet proven by outcome — the real test is whether impressions on these broad terms recover once the homepage H1 and collection descriptions are fixed. Worth re-pulling this same month-over-month comparison a few weeks after the fix ships.
+2. **Should Performance Max be configured to exclude brand terms?** OMG has already given step-by-step instructions for adding `[ona coffee]` as an exact-match negative keyword to the PMax/Shopping campaigns, and recommends a separate, budget-limited Brand Search campaign instead. Per the July 22 email this was an open ONA-side action item — worth confirming whether it's been done.
+3. **Margin impact of the click shift.** ~28–40% of branded clicks that used to be free organic clicks are now costing ad spend via PMax. Worth quantifying the actual CAC delta once full spend data is available.
+4. **Is the homepage/collection-page loss related to anything in the funnel/checkout audit?** #20 (cart ATC regression) landed 2026-05-27–29, close to but not the same event as the June 5–6 theme deployment discussed here. Keep these as separate problems that happened to land in the same stretch of time.
 
 Sources checked for the cannibalization research:
 - [How Paid Search Incrementality Impacts SEO](https://www.searchenginejournal.com/paid-search-incrementality/397279/) — Search Engine Journal

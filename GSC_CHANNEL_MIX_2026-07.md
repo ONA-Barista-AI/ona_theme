@@ -4,7 +4,10 @@
 **Branch:** `felipe/funnel-conversion-audit`
 **Scope:** Test the hypothesis that organic search visibility/sales are declining and paid spend is masking it in headline revenue.
 
-**Result: confirmed.** Google Search Console (site-wide, independent of Shopify) and Shopify's own traffic-type-attributed sales (independent of GSC) tell the same story from two different data sources: organic is down sharply since April 2026, and paid spend ramped up almost exactly in step to cover the gap.
+**Result: two separate, real phenomena, not one.** Felipe's pushback on the first pass of this analysis was correct: "paid cannibalizes organic" is a real, well-documented mechanism for **clicks**, but has no documented mechanism for reducing **impressions** — so a 38% impression drop needed a different explanation. Digging further with keyword-level GSC data, page-level GSC data, and the actual Google Ads account found both things are genuinely happening, for different reasons:
+
+1. **Click cannibalization on branded search terms** — real, matches the textbook signature exactly, and traces to Performance Max/Shopping campaigns that target branded queries automatically (no manual keyword control exists in this account).
+2. **A much larger impression/visibility collapse concentrated on two pages — the homepage and `/collections/all`** — unrelated to paid ads, still unexplained, and the more urgent problem of the two.
 
 ---
 
@@ -31,43 +34,72 @@ Site-wide performance for `onacoffee.com.au`, monthly, last 16 months:
 | Jun 2026 | 14,134 | 243,371 | 8.6 |
 | Jul 1–24, 2026 | 9,933 (partial) | 188,723 (partial) | 8.9 |
 
-**The counterintuitive part:** average position has been *improving* almost the whole period (32.5 → ~9), yet impressions dropped 38% and clicks dropped 25% from April to June 2026 alone (and July is on the same trajectory). This is not a ranking-quality problem — the pages that do rank are ranking better than ever. It reads as a loss of **visibility surface area**: fewer distinct queries/pages generating impressions at all, even though the ones that remain are performing well. Consistent explanations include reduced indexed-page coverage, reduced content breadth (e.g. product/collection consolidation), or falling underlying search demand for ONA's terms — not yet distinguished; see Open questions below.
+Average position has been *improving* almost the whole period (32.5 → ~9), yet impressions dropped 38% and clicks dropped 25% from April to June 2026 alone. Ranking quality isn't the problem — visibility surface area is shrinking. Sections 3–4 below localize exactly where.
 
 ---
 
-## 2. Shopify's own traffic-type-attributed sales — organic collapsing, paid ramping in lockstep
+## 2. Is this paid cannibalization? Checked against the actual research, then against ONA's own keyword data
 
-Pulled via ShopifyQL (`FROM sales`, `GROUP BY traffic_type, month`, last-click attribution) — a completely independent data source from GSC, based on actual completed orders rather than search impressions.
+Felipe's objection was right to raise: cannibalization is documented for **click-share**, not impressions. What the research actually says:
 
-Note: `traffic_type` attribution only starts producing real (non-$0) numbers from **October 2025** — everything before that shows as unattributed (`None`), meaning proper channel tracking wasn't wired up until then. The comparison below uses only the reliably-attributed window.
+- Google's own incrementality research (400+ ad-pause studies) found search ads average **89% incremental clicks** — i.e. only ~11% of ad clicks would have gone organic instead, on average. But that average masks a lot of variance: for **well-known/high-authority brands**, cannibalization is much higher — prior ad-shutoff studies found organic recovers **37–99.5%** of paid clicks specifically on **branded terms** ([Search Engine Journal](https://www.searchenginejournal.com/paid-search-incrementality/397279/); [Google Research](https://research.google/pubs/incremental-clicks-impact-of-search-advertising/)).
+- The documented diagnostic signature for active cannibalization: **"organic traffic drops while positions hold steady, and organic CTR falls while paid CTR on the same keywords rises"** ([climbinsearch.com](https://www.climbinsearch.com/faq/paid-search-cannibalizing-organic-search); [Search Engine Land](https://searchengineland.com/paid-search-clicks-double-organic-clicks-fall-study-469519)).
+- None of this literature describes a mechanism where running ads reduces organic **impressions** — Google still shows the organic listing regardless of whether an ad also appears alongside it.
 
-| Month | Organic net sales | Organic orders | Paid net sales | Paid orders |
-|---|---|---|---|---|
-| Oct 2025 | $41,364 | 394 | $81 | 1 |
-| Nov 2025 | $184,773 | 1,784 | $467 | 7 |
-| Dec 2025 | $76,927 | 746 | $22 | 1 |
-| Jan 2026 | $106,794 | 1,018 | $131 | 1 |
-| Feb 2026 | $110,746 | 1,111 | $127 | 1 |
-| Mar 2026 | $95,215 | 978 | $290 | 3 |
-| **Apr 2026** | **$113,087** | **1,080** | **$3,539** | **34** |
-| May 2026 | $85,464 | 880 | $8,118 | 89 |
-| **Jun 2026** | **$54,660** | **482** | **$38,081** | **336** |
-| Jul 1–24, 2026 (partial) | $38,560 | 374 | $27,596 | 285 |
+**Checked ONA's own branded-query data** (GSC Compare, June 2026 vs April 2026) against that exact signature:
 
-**Reading this month by month:**
-- Through March 2026, Paid is essentially nonexistent ($22–$290/month) — Organic is carrying the store almost entirely.
-- April 2026: Organic is still near its peak ($113K) but Paid starts moving ($3.5K, 34 orders) — the first real signal of a shift.
-- May 2026: Organic drops 24% ($113K → $85K). Paid roughly doubles ($3.5K → $8.1K) but nowhere near enough to offset the organic loss. **Combined Organic+Paid falls from ~$117K to ~$94K.**
-- **June 2026: Organic drops another 36% ($85K → $55K, a ~$31K loss). Paid jumps 4.7x ($8K → $38K, a ~$30K gain).** Almost a dollar-for-dollar swap. Combined Organic+Paid is effectively flat month-over-month (~$94K → ~$93K) — the paid ramp fully masked the organic decline in the headline number that same month.
-- July 2026 (partial, 24 days): Organic continues declining ($38.6K, pace ~$50K for the full month, down again from June); Paid is roughly holding at its new elevated level ($27.6K, pace ~$36K). Combined is trending down again — the paid ramp hasn't fully kept pace with organic's continued fall into July.
+| Query | Clicks Apr | Clicks Jun | Clicks Δ | Impr. Apr | Impr. Jun | Impr. Δ |
+|---|---|---|---|---|---|---|
+| ona coffee | 6,460 | 4,644 | **-28%** | 11,061 | 12,197 | **+10%** |
+| ona | 2,058 | 1,225 | **-40%** | 5,240 | 5,270 | +0.6% |
+| ona coffee beans | 817 | 515 | **-37%** | 1,252 | 1,390 | **+11%** |
+| ona raspberry candy | 184 | 145 | **-21%** | 297 | 344 | **+16%** |
 
-**This directly confirms the hypothesis as stated:** organic search sales have been in a real, steep decline since April 2026, and a deliberate or coincidental ramp in paid spend beginning the same month — sharply accelerating in June — has been masking that decline in combined/headline revenue. Anyone looking only at total store revenue without splitting by channel would not have seen the organic problem; June's flat combined total in particular would have looked like a stable month rather than "organic fell 36%, paid happened to grow just enough to hide it."
+This is the textbook signature, exactly. Clicks down 21–40% on every top branded query, while impressions on those same queries are flat or **up**. Organic isn't losing eligibility to show for its own brand name — it's losing the click to something else on the same result page.
+
+**Checked the Google Ads account directly** to find the mechanism: **there is no active Search campaign with manually-chosen keywords.** The only two live campaigns are `AON | Performance Max | TOF | ONA Coffee` and `AON | Shopping | Catalogue | ONA Coffee` — both automated campaign types where Google's algorithm decides which queries to match, not the advertiser. This is a widely-documented Performance Max behavior: PMax is known to aggressively match branded queries because they're cheap and convert well, with no way to exclude brand terms from a standard PMax campaign the way you could with a manually-built Search campaign. A paused campaign called `Website traffic-Wholesale page` (Search type, all ads stopped) confirms brand-term bidding isn't a deliberate, separately-managed strategy here — it's very likely a side effect of PMax's own targeting logic.
+
+**Conclusion on this part:** cannibalization is real, confirmed, and traces to Performance Max auto-targeting branded search — not a deliberate brand-defense campaign. It's a real cost (organic clicks that used to be free are now costing ad spend) but it's a normal, fixable PMax configuration issue, not a crisis — and it does not explain the impression collapse.
 
 ---
 
-## Open questions (not yet investigated)
+## 3. The real driver: impressions collapsed on two pages specifically — homepage and `/collections/all`
 
-1. **What's driving the GSC visibility loss specifically?** Ranking is fine; something else is shrinking impressions. Worth checking: Search Console's **Pages** report for whether specific high-traffic pages lost indexing or impressions (product/collection pages vs blog/content), and the **Queries** report split by branded ("ona coffee", "ona") vs non-branded terms — if it's concentrated in branded queries, this is a brand-awareness/demand issue; if non-branded, more likely a content/indexing issue.
-2. **Is the paid ramp deliberate?** Not yet confirmed whether this was an intentional decision (e.g. a campaign increase to compensate for a known organic dip) or a coincidence. Worth checking actual Google Ads spend/budget change history for April–June 2026 to see if it lines up with a specific campaign or budget decision, or happened independently of anyone noticing the organic slide.
-3. **Is this related to any of the funnel/checkout findings from the same period?** #20 (the cart ATC regression) landed 2026-05-27–29, which is inside this window but doesn't explain the organic decline that was already underway in April/May — worth keeping as two separate problems rather than assuming one caused the other, though both were degrading the funnel at the same time.
-4. **Margin impact.** Paid orders cost money to acquire; organic orders effectively don't. A revenue-neutral swap from organic to paid is not neutral on profitability. Worth quantifying blended CAC/margin impact once ad spend data is available.
+Sorted the same June-vs-April GSC comparison by **Pages** instead of Queries:
+
+| Page | Impr. Apr | Impr. Jun | Impr. Δ | Clicks Apr | Clicks Jun | Clicks Δ |
+|---|---|---|---|---|---|---|
+| `/` (homepage) | 137,677 | 80,278 | **-57,399 (-42%)** | 8,725 | 6,527 | -2,198 (-25%) |
+| `/collections/all` | 48,427 | 33,099 | **-15,328 (-32%)** | 2,636 | 1,497 | -1,139 (-43%) |
+| `/pages/locations` | 37,673 | 36,661 | -1,012 (-3%) | 1,391 | 1,284 | -107 |
+| `/products/raspberry-candy` | 3,821 | 3,733 | -88 | 632 | 453 | -179 |
+
+The homepage alone accounts for **~38% of the entire site's impression loss** (-57,399 of -150,696 total). Homepage + `/collections/all` together account for **~48%** of it. Every other page's loss is comparatively minor. This is not spread evenly across the site or concentrated in one product category — it's two specific, high-level pages.
+
+**Checked whether the homepage was deindexed or flagged:** no. URL Inspection shows it's indexed, no manual actions, no coverage errors — Google considers it fully eligible to appear. This rules out a hard technical failure (noindex tag, robots.txt block, removal request) as the cause. Whatever changed is affecting *ranking/relevance for broad queries* specifically, not indexing eligibility.
+
+**Cross-checked which queries lost the most impressions site-wide** (same Compare, sorted by Queries instead of Pages) — this is where the homepage/collection-page loss actually shows up:
+
+| Query | Impr. Apr | Impr. Jun | Impr. Δ | Clicks Apr | Clicks Jun |
+|---|---|---|---|---|---|
+| espresso beans | 55,430 | 6,891 | **-48,539 (-88%)** | 2 | 1 |
+| coffee near me | 14,469 | 1,400 | **-13,069 (-90%)** | 2 | 1 |
+| coffee beans | 9,834 | 4,870 | -4,964 (-50%) | 120 | 106 |
+| coffee | 9,772 | 5,164 | -4,608 (-47%) | 11 | 7 |
+
+These are broad, generic, category-level terms — exactly what a homepage or an "all products" collection page would be expected to rank for — and they had almost no clicks at either point in time (1–2 clicks on the two biggest losers, out of tens of thousands of impressions). This rules out cannibalization here too: there's no meaningful click volume to divert. This looks like ONA's homepage and collection-all page lost ranking eligibility for broad category terms specifically, while keeping (or improving) their ranking for branded and long-tail terms.
+
+---
+
+## Open questions
+
+1. **What changed on the homepage or `/collections/all` around April 2026 to cause this?** Not yet identified. Worth checking: theme/content change history for those two templates in this window (the repo's own commit history starts 2026-05-27, so an earlier change — before the branch's visibility — or a Shopify-admin-side content edit is more likely than a tracked code change), Core Web Vitals for those specific URLs, and whether page title/meta description/structured data changed. This is a real, still-open SEO investigation, separate from anything in the funnel/checkout audit.
+2. **Should Performance Max be configured to exclude brand terms?** Standard PMax doesn't support keyword-level brand exclusion the way Search campaigns do, but brand exclusion lists and account-level negative keywords are possible in some configurations — worth a conversation with whoever manages the Ads account (or Google's own PMax brand controls, which have expanded over time) before assuming nothing can be done.
+3. **Margin impact of the click shift.** ~28–40% of branded clicks that used to be free organic clicks are now costing ad spend via PMax. Worth quantifying the actual CAC delta once full spend data is available — this is a real, quantifiable cost even though it's not the bigger problem.
+4. **Is the homepage/collection-page loss related to anything in the funnel/checkout audit?** #20 (cart ATC regression) landed 2026-05-27–29 — inside this window, but the impression decline was already underway in April, before that commit. Keep these as separate problems; both were degrading performance in the same stretch of time but don't appear causally linked.
+
+Sources checked for the cannibalization research:
+- [How Paid Search Incrementality Impacts SEO](https://www.searchenginejournal.com/paid-search-incrementality/397279/) — Search Engine Journal
+- [Incremental Clicks: The Impact of Search Advertising](https://research.google/pubs/incremental-clicks-impact-of-search-advertising/) — Google Research
+- [Paid search click share doubles as organic clicks fall: Study](https://searchengineland.com/paid-search-clicks-double-organic-clicks-fall-study-469519) — Search Engine Land
+- [Paid Search Cannibalizing Organic Search](https://www.climbinsearch.com/faq/paid-search-cannibalizing-organic-search) — ClimbInSearch

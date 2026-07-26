@@ -23,9 +23,9 @@ All five are open GitHub issues on `ONA-Barista-AI/ona_theme`, each independentl
 
 \#13 (missing JSON-LD) was deleted — false positive, Shopify injects it at the platform level regardless of theme code. #16 (locations page title) is closed, fixed directly in Shopify admin.
 
-### 2. Cart drawer doesn't open on the *product* page either
+### 2. Cart drawer doesn't open on the *product* page either — confirmed, reproducible
 
-Not a filed issue, noticed during today's live walkthrough: adding "Raspberry Candy" from its own product page did not open a cart drawer or show any confirmation — the item was added silently (badge count incremented, no visual feedback). This is on `ona-product-information.liquid`, a different file from #20's collection-page drawer bug. Not yet root-caused or filed. **Hypothesis, not a finding** — needs a repeat test to rule out a one-off render glitch before filing.
+Not a filed issue yet. Adding a product from its own product page does not open a cart drawer or show any confirmation — the item is added silently (badge count increments, no visual feedback). Reproduced on two different products (Raspberry Candy, Maple) — not a one-off glitch. This is on `ona-product-information.liquid`, a different file from #20's collection-page drawer bug, and not yet root-caused in code. Worth filing as its own issue: it affects the primary single-product purchase path, not just collection quick-add, so it's plausibly as high-value as #20.
 
 ### 3. Standard "Check Out" auto-redirects to Shop Pay, not just the express button
 
@@ -119,6 +119,17 @@ This is in the ordinary range for ad-blocker/consent-mode/cross-domain tracking 
 
 The earlier assumption that Clarity was "confirmed installed" was wrong. Opening the Clarity app in Shopify admin today landed on a fresh onboarding screen ("How would you like to set up Clarity?"), not a dashboard — meaning **no heatmap or session-recording data exists to review**. Did not click through setup: the recommended option bundles a new "Clarity with Brand Agents" AI shopping assistant with its own Terms of Use, which is a real decision, not a default to click past.
 
+### 11. Mobile vs. desktop add-to-cart → begin-checkout gap, re-verified — the earlier estimate held up
+
+Re-pulled from the Events report (not the funnel-exploration tool), segmented by device category, same Jan 1 – Jul 26, 2026 window:
+
+| Device | Add to cart (users) | Begin checkout (users) | Step conversion |
+|---|---|---|---|
+| Mobile | 16,723 | 7,059 | 42.2% |
+| Desktop | 6,789 | 3,730 | 54.9% |
+
+A 12.7-point gap — close to the 2026-07-25 draft's 41%/52% estimate (which came from the now-distrusted funnel tool). Unlike the absolute step counts in Finding 4, this particular *ratio* held up under re-verification. Mobile genuinely converts add-to-cart → begin-checkout noticeably worse than desktop; worth keeping as a real, standing gap to watch when #20 ships (mobile add-to-cart was hit harder by the May 27–29 regression too — see Timeline correlation).
+
 ---
 
 ## Unproven hypotheses (with a validation plan)
@@ -129,19 +140,13 @@ Not a typo — reproduced in two separate reports (Events report and Transaction
 
 **B. Why `add_shipping_info` is at zero when `add_payment_info` fires normally.**
 The Shop Pay one-page-UI theory from the earlier draft doesn't fully hold now that `add_payment_info` (64% coverage) looks normal. It's possible this specific event simply isn't wired up in Shopify's current checkout-extensibility configuration for *any* path, Shop Pay or classic.
-*Validation plan:* run a live GA4 DebugView session through the classic (non-Shop-Pay, "check out as guest") checkout and watch whether `add_shipping_info` fires at all on that path. If it doesn't fire even in classic checkout, this points to a Shopify/GA4 pixel-configuration gap rather than a Shop Pay-specific limitation, and is worth a support conversation with Shopify rather than a theme fix (there's no theme code involved either way — see Finding 4/#12's precedent).
 
-**C. Mobile vs. desktop conversion gap (previously reported as 41% vs 52% add-to-cart→checkout).**
-This number came from the same funnel-exploration tool now known to undercount. Not re-verified this session.
-*Validation plan:* re-pull device-segmented add_to_cart → begin_checkout using the Events report methodology (Finding 4) before treating this gap as real or sizing it.
+*Tested today:* live checkout walkthrough with `window.Shopify.analytics.publish` hooked (instrumented, not simulated — confirmed the hook was the live function via `publishIsMine: true`) while genuinely changing the selected shipping method on a classic ("check out as guest") checkout. **Zero calls captured**, despite the visible UI updating (rate selection changed, total recalculated). This is suggestive but not conclusive — the checkout page has 10 iframes, some sandboxed for PCI reasons, and pixel dispatch could be happening inside one of those, invisible to a top-page hook. The result is consistent with — but doesn't prove — the theory that this checkout's single-page layout (contact + shipping + payment all visible at once, no discrete "continue to payment" step) simply has no trigger point Shopify's checkout wires `add_shipping_info` to.
+*Remaining validation step:* a proper GA4 DebugView session (not just network/hook instrumentation) would give a definitive answer and is worth 10 minutes before concluding this is a Shopify-side gap not worth theme engineering time.
 
 **D. Guest/first-time-visitor checkout experience.**
-Today's checkout walkthrough (Finding 9) was done from Felipe's own browser — a recognized session with a saved card, saved address, and pre-filled name. A true first-time visitor's experience (empty fields, no express-checkout recognition, unfamiliar layout) was not independently tested.
+Today's checkout walkthrough (Finding 9) was done from Felipe's own browser — a recognized session with a saved card, saved address, and pre-filled name. A true first-time visitor's experience (empty fields, no express-checkout recognition, unfamiliar layout) was not independently tested. Also noticed today: the plain "Check Out" button's behavior isn't deterministic — it auto-redirected to Shop Pay on one attempt and went straight to classic checkout on a later attempt from the same session, so Finding 3 shouldn't be read as "always redirects."
 *Validation plan:* repeat the walkthrough in a clean/incognito session, or have someone who's never visited the site test the flow and note friction points.
-
-**E. Cart drawer not opening on the product page (Finding 2).**
-Single observation, not yet repeated or filed as an issue.
-*Validation plan:* repeat the add-to-cart action on 2-3 different products/variants to confirm it's consistent before filing.
 
 ---
 
@@ -154,9 +159,8 @@ Single observation, not yet repeated or filed as an issue.
 
 ## Recommendations, in priority order
 
-1. **Ship the #20 ATC fix first.** Everything else in this audit is secondary to this — it's the one *currently active, code-fixable* leak with a clear before/after signal (Finding 4's corrected add-to-cart and begin-checkout numbers give a clean baseline to measure the fix against).
-2. **Re-pull the funnel after #20 ships, using the Events-report method from Finding 4** — not the Funnel exploration tool, which this audit found unreliable.
-3. **Run the DebugView test in Hypothesis B before deciding whether to chase `add_shipping_info` as a bug.** It's cheap to check and determines whether this is a Shopify-side gap (not worth theme engineering time) or something specific to this checkout setup.
+1. **Ship the #20 ATC fix first**, and file + fix Finding 2 (product-page drawer) alongside it — both are confirmed, code-fixable, and together cover the entire add-to-cart surface (collection and product pages). Finding 4's corrected numbers give a clean baseline to measure both against.
+2. **Re-pull the funnel after both ship, using the Events-report method from Finding 4** — not the Funnel exploration tool, which this audit found unreliable. Check Finding 11's mobile/desktop gap specifically to see if it narrows.
+3. **Run a proper GA4 DebugView session before deciding whether to chase `add_shipping_info` as a bug** (Hypothesis B) — today's instrumented test was suggestive (zero events captured through a genuine shipping-method change) but not conclusive, since checkout runs pixels across 10 iframes that a top-page hook can't fully see into.
 4. **Treat GA4 purchase/revenue numbers as directional, not absolute**, given the confirmed 17-18% gap against Shopify's own Online Store order count (Finding 8) — but this is a normal-sized gap now, not a reason to distrust GA4 broadly.
 5. **Decide on Clarity separately**, now that it's confirmed not installed (Finding 10) — it's a real option for the qualitative side of this audit (Hypothesis D in particular), but the "Brand Agents" bundling needs a deliberate yes/no, not a default click-through.
-6. **Repeat Finding 2 and file if confirmed** — cheap to check, and if real it's likely as high-value as #20 since it affects the primary product-page purchase path, not just collection quick-add.

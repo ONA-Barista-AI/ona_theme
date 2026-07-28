@@ -6,11 +6,16 @@
 {%- endcomment -%}
 {%- if template.name == 'index' and section.blocks.size > 0 -%}
   {%- assign first_block = section.blocks.first -%}
+  {%- comment -%} `href` is required or the preload is silently ignored. `image_url` replaces the deprecated `img_url`. {%- endcomment -%}
   <link rel="preload" as="image"
-        imagesrcset="{{ first_block.settings.bgmb | img_url: '750x' }} 750w, {{ first_block.settings.bgmb | img_url: '1100x' }} 1100w"
+        href="{{ first_block.settings.bgmb | image_url: width: 750 }}"
+        imagesrcset="{{ first_block.settings.bgmb | image_url: width: 750 }} 750w, {{ first_block.settings.bgmb | image_url: width: 1100 }} 1100w"
+        imagesizes="(max-width: 991.98px) 100vw"
         media="(max-width: 991.98px)" fetchpriority="high">
   <link rel="preload" as="image"
-        imagesrcset="{{ first_block.settings.bg | img_url: '1600x' }} 1600w, {{ first_block.settings.bg | img_url: '2400x' }} 2400w"
+        href="{{ first_block.settings.bg | image_url: width: 1600 }}"
+        imagesrcset="{{ first_block.settings.bg | image_url: width: 1600 }} 1600w, {{ first_block.settings.bg | image_url: width: 2400 }} 2400w"
+        imagesizes="(min-width: 992px) 100vw"
         media="(min-width: 992px)" fetchpriority="high">
 {%- endif -%}
 <section

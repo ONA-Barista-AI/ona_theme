@@ -1,22 +1,19 @@
-<!-- CANARY-R33-2026-04-28 move preload <link> out of .banner-top-slider so slick does not pick them up as slides -->
 {%- comment -%}
-  R26/R33 — hero LCP preload kept BEFORE <section> so slick (bound to .banner-top-slider)
-  does not wrap the <link> tags into .slick-slide (caused 2 empty slides in R26).
-  preload <link> is valid anywhere in the document; placement does not affect priority.
+  Hero LCP preload for the first slide's foreground <img>. Kept OUTSIDE
+  <section> so slick (bound to .banner-top-slider) does not wrap the
+  <link> tags into .slick-slide. URL / srcset / sizes MUST match the
+  `image_tag` call below verbatim, or the browser preload cache is not
+  reused and we double-download.
 {%- endcomment -%}
 {%- if template.name == 'index' and section.blocks.size > 0 -%}
-  {%- assign first_block = section.blocks.first -%}
-  {%- comment -%} `href` is required or the preload is silently ignored. `image_url` replaces the deprecated `img_url`. {%- endcomment -%}
-  <link rel="preload" as="image"
-        href="{{ first_block.settings.bgmb | image_url: width: 750 }}"
-        imagesrcset="{{ first_block.settings.bgmb | image_url: width: 750 }} 750w, {{ first_block.settings.bgmb | image_url: width: 1100 }} 1100w"
-        imagesizes="(max-width: 991.98px) 100vw"
-        media="(max-width: 991.98px)" fetchpriority="high">
-  <link rel="preload" as="image"
-        href="{{ first_block.settings.bg | image_url: width: 1600 }}"
-        imagesrcset="{{ first_block.settings.bg | image_url: width: 1600 }} 1600w, {{ first_block.settings.bg | image_url: width: 2400 }} 2400w"
-        imagesizes="(min-width: 992px) 100vw"
-        media="(min-width: 992px)" fetchpriority="high">
+  {%- assign first_image = section.blocks.first.settings.image -%}
+  {%- if first_image -%}
+    <link rel="preload" as="image"
+          href="{{ first_image | image_url: width: 1020 }}"
+          imagesrcset="{{ first_image | image_url: width: 320 }} 320w, {{ first_image | image_url: width: 480 }} 480w, {{ first_image | image_url: width: 640 }} 640w, {{ first_image | image_url: width: 800 }} 800w, {{ first_image | image_url: width: 1020 }} 1020w, {{ first_image | image_url: width: 1400 }} 1400w"
+          imagesizes="(max-width: 991.98px) 90vw, 50vw"
+          fetchpriority="high">
+  {%- endif -%}
 {%- endif -%}
 <section
   class="banner-top-slider"

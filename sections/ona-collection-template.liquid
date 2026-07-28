@@ -868,6 +868,34 @@
           .then(function (resp) {
             atc.textContent = 'Added ✓';
 
+            // Fire GA4 add_to_cart + Meta AddToCart directly. Shopify's Web
+            // Pixel Manager subscribes to Customer Events fired by Shopify's
+            // native cart flow, but this AJAX /cart/add.js call bypasses that,
+            // so we notify Meta and GA4 manually.
+            try {
+              if (typeof gtag === 'function') {
+                gtag('event', 'add_to_cart', {
+                  currency: 'AUD',
+                  value: resp.final_line_price / 100,
+                  items: [{
+                    item_id: String(resp.variant_id),
+                    item_name: resp.product_title,
+                    item_variant: resp.variant_title,
+                    quantity: resp.quantity,
+                    price: resp.final_price / 100
+                  }]
+                });
+              }
+              if (typeof fbq === 'function') {
+                fbq('track', 'AddToCart', {
+                  content_ids: [String(resp.variant_id)],
+                  content_type: 'product',
+                  value: resp.final_line_price / 100,
+                  currency: 'AUD'
+                });
+              }
+            } catch (_e) { /* swallow analytics errors */ }
+
             document.dispatchEvent(new CustomEvent('cart:update', {
               bubbles: true,
               detail: {

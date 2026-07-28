@@ -33,6 +33,8 @@
           {%- endif -%}
         </a>
 
+        <div class="ona-fc__tags">{% render 'ona-product-tags', product: p %}</div>
+
         <a href="{{ p.url }}" class="ona-fc__title">{{ p.title | escape }}</a>
 
         <div class="ona-fc__price">

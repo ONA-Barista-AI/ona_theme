@@ -18,6 +18,23 @@
   }
 }
 
+/* BL-03: allow ATC + variant pills to flow below product info naturally.
+   Without these overrides, `.shop-list .list` (flex column with wrap from
+   assets/main.css) can push .ona-pc__actions to a new column on the right. */
+.shop-list .list {
+  flex-wrap: nowrap;
+  margin-bottom: 30px;
+}
+.shop-list .list-box {
+  height: auto;
+  flex: 1 1 auto;
+}
+/* Override assets/main.css `.shop-list .add-to-cart { display: none }` which
+   was hiding the ATC block entirely; ATC is intentional on the collection card. */
+.shop-list .add-to-cart {
+  display: block;
+}
+
 /* ONA Product Card - Variants & Add to Cart */
 .ona-pc__actions {
   padding: 0 10px 15px;

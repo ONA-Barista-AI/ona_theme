@@ -614,3 +614,14 @@ body.index header .container {
   .slideshow__pause--is-paused .slideshow__pause-rotate {
     display: block; }
 
+/* Bug 3: cart badge is white-on-cream in the default (non-scrolled) header state,
+   so it's effectively invisible until the user scrolls and the sticky header
+   swaps to burgundy. Force the burgundy pill in both header states. */
+.header-actions__cart-icon .cart-bubble__background {
+  background-color: #661a34;
+  border-color: #661a34;
+}
+.header-actions__cart-icon .cart-bubble__text,
+.header-actions__cart-icon .cart-bubble__text-count {
+  color: #ffffff;
+}

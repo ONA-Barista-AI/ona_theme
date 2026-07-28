@@ -913,20 +913,32 @@
               }
             } catch (_e) { /* swallow analytics errors */ }
 
-            document.dispatchEvent(new CustomEvent('cart:update', {
-              bubbles: true,
-              detail: {
-                resource: resp,
-                sourceId: variantInput ? variantInput.value : '',
-                data: {
-                  source: 'ona-collection-template',
-                  sections: resp.sections || {},
-                  itemCount: resp.item_count
-                }
-              }
-            }));
+            // Bug 2: /cart/add.js does NOT return `item_count`, so `resp.item_count`
+            // is undefined. Dispatching the cart:update event with an undefined count
+            // was making the cart-icon script treat it as 0 and briefly flip the
+            // badge to the "empty" style (white). Fetch /cart.js to get the true
+            // count before dispatching. /cart/count.js is not available on this store.
+            fetch('/cart.js', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+              .then(function (r) { return r.json(); })
+              .catch(function () { return { item_count: undefined }; })
+              .then(function (cart) {
+                document.dispatchEvent(new CustomEvent('cart:update', {
+                  bubbles: true,
+                  detail: {
+                    resource: resp,
+                    sourceId: variantInput ? variantInput.value : '',
+                    data: {
+                      source: 'ona-collection-template',
+                      sections: resp.sections || {},
+                      itemCount: cart.item_count
+                    }
+                  }
+                }));
+              });
 
-            if (window.__onaAutoOpenCart) setTimeout(openCartDrawer, 120);
+            // Bug 1: `window.__onaAutoOpenCart` is never set, so this branch was
+            // dead code and the drawer never opened. Open unconditionally.
+            setTimeout(openCartDrawer, 120);
             setTimeout(function () { atc.textContent = label; atc.classList.remove('is-loading'); }, 1500);
           })
           .catch(function (err) {

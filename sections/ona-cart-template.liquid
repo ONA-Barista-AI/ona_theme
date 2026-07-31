@@ -15,14 +15,7 @@
 
     {%- render 'qikify-reward-bar' -%}
 
-    {%- comment -%}
-      Must use {% form 'cart' %} (not a plain <form>) — Shopify's
-      content_for_additional_checkout_buttons only injects Shop Pay /
-      PayPal / Google Pay / Apple Pay buttons inside this form context.
-      A plain <form> leaves the button slot empty and the accelerated
-      checkout web component then hides itself.
-    {%- endcomment -%}
-    {%- form 'cart', class: 'cart', id: 'cart-form', novalidate: 'novalidate' -%}
+    <form action="{{ routes.cart_url }}" method="post" novalidate class="cart" id="cart-form">
       <table>
         <thead class="cart__row cart__row--heading">
           <tr>
@@ -197,7 +190,7 @@
           </div>
         </div>
       </div>
-    {%- endform -%}
+    </form>
   </div>
 
   <div class="empty-page-content{% if cart.item_count > 0 %} hide{% endif %} text-center" data-empty-page-content>

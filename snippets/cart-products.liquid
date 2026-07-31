@@ -60,12 +60,13 @@
     >
       {{- cart.item_count -}}
     </span>
-    <form
-      action="{{ routes.cart_url }}"
-      class="cart-form"
-      id="cart-form"
-      method="post"
-    >
+    {%- comment -%}
+      {% form 'cart' %} is required for content_for_additional_checkout_buttons
+      to inject Shop Pay / PayPal / GPay / ApplePay buttons. A plain <form>
+      makes Shopify treat the accelerated-checkout slot as empty and its
+      web component hides itself.
+    {%- endcomment -%}
+    {%- form 'cart', class: 'cart-form', id: 'cart-form' -%}
       <div
         class="cart-items spacing-style{% if block_settings.dividers %} cart-items--dividers{% endif %}"
         style="{%  render 'spacing-style', settings: block_settings %} --cart-items-gap:{{ block_settings.gap | append: "px" }};"
@@ -379,7 +380,7 @@
           </tbody>
         </table>
       </div>
-    </form>
+    {%- endform -%}
   {%- endif -%}
 </div>
 

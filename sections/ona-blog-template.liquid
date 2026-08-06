@@ -49,6 +49,10 @@
                       {% include 'image-style', image: article.image, height: 345, wrapper_id: img_wrapper_id, img_id: img_id %}
                             <div class="img">
                               <img src="{{ article.image | img_url: '' }}"
+                                  width="{{ article.image.width }}"
+                                  height="{{ article.image.height }}"
+                                  loading="lazy"
+                                  decoding="async"
                                   alt="">
                             </div>
                     {% endif %}

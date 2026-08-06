@@ -6,12 +6,22 @@
 {%- endcomment -%}
 {%- if template.name == 'index' and section.blocks.size > 0 -%}
   {%- assign first_block = section.blocks.first -%}
-  <link rel="preload" as="image"
-        imagesrcset="{{ first_block.settings.bgmb | img_url: '750x' }} 750w, {{ first_block.settings.bgmb | img_url: '1100x' }} 1100w"
-        media="(max-width: 991.98px)" fetchpriority="high">
-  <link rel="preload" as="image"
-        imagesrcset="{{ first_block.settings.bg | img_url: '1600x' }} 1600w, {{ first_block.settings.bg | img_url: '2400x' }} 2400w"
-        media="(min-width: 992px)" fetchpriority="high">
+  {%- comment -%}
+    URL MUST match the CSS `background-image: url(...)` below byte-for-byte
+    (same filter — `img_url: '1920x'` / `'828x'` — and same protocol-relative
+    host) or the preloaded file is never reused and we double-download.
+    `media` scopes each preload to the breakpoint whose CSS actually uses it.
+  {%- endcomment -%}
+  {%- if first_block.settings.bgmb -%}
+    <link rel="preload" as="image"
+          href="{{ first_block.settings.bgmb | img_url: '828x' }}"
+          media="(max-width: 991.98px)" fetchpriority="high">
+  {%- endif -%}
+  {%- if first_block.settings.bg -%}
+    <link rel="preload" as="image"
+          href="{{ first_block.settings.bg | img_url: '1920x' }}"
+          media="(min-width: 992px)" fetchpriority="high">
+  {%- endif -%}
 {%- endif -%}
 <section
   class="banner-top-slider"

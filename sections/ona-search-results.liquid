@@ -16,6 +16,8 @@
   <div class="container">
     {% if search.performed %}
       {% if search.results_count > 0 %}
+        {% render 'ona-filter-drawer-skin' %}
+        {% content_for 'block', type: 'filters', id: 'filters', results: search, results_size: search.results_count %}
         <div class="shop-list">
           {% for item in search.results %}
             {% if item.object_type == 'product' %}

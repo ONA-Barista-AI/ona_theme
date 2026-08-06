@@ -12,7 +12,7 @@
           .list (Follow Us:  h3 + ul with icomoon IG/YT/FB)
         .footer-bottom
           .copyright
-          <ul> Privacy + Site by {label}
+          <ul> Privacy + ABN
 {%- endcomment -%}
 
 {%- assign main_linklist = linklists[section.settings.main_linklist] -%}
@@ -77,8 +77,8 @@
         {%- if section.settings.privacy != blank -%}
           <li><a href="{{ section.settings.privacy }}">Privacy</a></li>
         {%- endif -%}
-        {%- if section.settings.siteby_url != blank -%}
-          <li><a href="{{ section.settings.siteby_url }}" target="_blank" rel="noopener">Site by {{ section.settings.siteby | escape }}</a></li>
+        {%- if section.settings.abn != blank -%}
+          <li>ABN: {{ section.settings.abn | escape }}</li>
         {%- endif -%}
       </ul>
     </div>
@@ -169,19 +169,10 @@
     },
     {
       "type": "text",
-      "id": "siteby",
-      "label": "Site by (agency name)"
-    },
-    {
-      "type": "url",
-      "id": "siteby_url",
-      "label": "Site by URL"
-    },
-    {
-      "type": "text",
       "id": "abn",
-      "label": "ABN",
-      "default": "34 152 428 585"
+      "label": "ABN (Australian Business Number)",
+      "info": "Shown in footer bottom row, e.g. \"ABN: 12 345 678 901\"",
+      "default": "00 000 000 000"
     }
   ],
   "presets": [

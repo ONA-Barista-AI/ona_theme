@@ -641,7 +641,17 @@ body.index header .container {
    `.header`'s box too, which sits inset inside `.container`'s side padding, so
    the open drawer falls short of the true left/right edges of the screen.
    Scoped to `.wrap-header .header` (our own unique wrapper) so this never
-   touches Horizon's native header component if that markup is used elsewhere. */
+   touches Horizon's native header component if that markup is used elsewhere.
+
+   UPDATE: on production, plain specificity (0,0,2,0) was NOT enough to beat
+   Horizon's `.header{contain:layout style}` (0,0,1,0) -- likely because
+   Horizon's compiled_assets/styles.css is loaded via a CSS cascade layer,
+   which outranks unlayered author styles regardless of specificity for
+   normal-priority declarations. Confirmed live: without !important, computed
+   `contain` on our .header div still read "layout style"; with !important it
+   correctly reads "none" and both the mobile drawer and the desktop dropdown's
+   right edge (previously falling short of the true right edge for the exact
+   same reason -- see PR for the second symptom) resolve correctly. */
 .wrap-header .header {
-  contain: none;
+  contain: none !important;
 }

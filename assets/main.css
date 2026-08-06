@@ -4792,8 +4792,13 @@ footer a:hover {
   margin-top: 15px;
 }
 
+.shop-list .add-to-cart {
+  display: none;
+}
+
 @media (max-width: 575.98px) {
   .shop-list .add-to-cart {
+    display: none;
     text-align: center;
     margin-bottom: 18px;
   }
@@ -30952,3 +30957,65 @@ qbk-inject-order-goal .qbk-order-goal,
   }
 }
 /* === END Round 105 ======================================================================== */
+
+/* ==========================================================================
+   ONA product card — global styles (moved from ona-collection-template.liquid
+   so search-results and any other page using ona-product-card gets them too)
+   ========================================================================== */
+.sold-out-tag { top: -8px; right: 18px; }
+@media (max-width: 575.98px) {
+  .sold-out-tag { width: 86px; height: 71px; top: 0; right: 14px; }
+  .shop-list .list .price--on-sale .price__badge--sale { width: 86px; height: 71px; top: 0; right: 14px; }
+}
+/* BL-03: allow ATC + variant pills to flow below product info naturally.
+   Without these overrides, `.shop-list .list` (flex column with wrap from
+   main.css above) can push .ona-pc__actions to a new column on the right. */
+.shop-list .list { flex-wrap: nowrap; margin-bottom: 30px; }
+.shop-list .list-box { height: auto; flex: 1 1 auto; }
+/* Override earlier `.shop-list .add-to-cart { display: none }` — ATC is
+   intentional on the collection / search card. */
+.shop-list .add-to-cart { display: block; }
+.ona-pc__actions { padding: 0 10px 15px; text-align: center; }
+.ona-pc__opt { margin-bottom: 12px; }
+.ona-pc__opt-label { display: block; font: 400 13px/1.4 'Karla', sans-serif; color: #333; margin-bottom: 6px; }
+.ona-pc__opt-label strong { font-weight: 400; }
+.ona-pc__opt-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.ona-pc__pill { padding: 6px 14px; border: 1px solid #ccc; background: #fff; font: 400 13px/1 'Karla', sans-serif; color: #2b2c30; cursor: pointer; transition: all 0.15s ease; }
+.ona-pc__pill:hover { border-color: #2b2c30; }
+.ona-pc__pill--active { background: #2b2c30; color: #fff; border-color: #2b2c30; }
+.ona-pc__pill--sold-out { opacity: 0.5; text-decoration: line-through; }
+.shop-list .list form[data-card-form] { display: flex; justify-content: center; }
+.ona-pc__atc { display: block; width: 100%; padding: 11px 12px; background: #2b2c30; color: #fff; border: 1px solid #2b2c30; cursor: pointer; font: 400 13px/1 'Karla', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; transition: background 0.2s ease, border-color 0.2s ease; }
+.ona-pc__atc:hover:not([disabled]) { background: #661a34; border-color: #661a34; }
+.ona-pc__atc[disabled] { background: #ccc; border-color: #ccc; cursor: not-allowed; }
+.ona-pc__atc.is-loading { opacity: 0.7; pointer-events: none; }
+
+/* Bug: mobile off-canvas nav (nav.main-nav) doesn't fully hide when closed and
+   doesn't reach the screen edges when open; desktop "Shop"/"Locations" hover
+   dropdown falls short of the true right edge of the screen. Root cause:
+   Shopify Horizon's own platform-compiled CSS (compiled_assets/styles.css,
+   not in this repo) defines `.header { contain: layout style; }` for its
+   native header component. Our custom header (sections/ona-header.liquid)
+   independently reuses the class name `.header` for an unrelated div, so it
+   accidentally inherits that containment too. That makes `.header` the CSS
+   containing block for any `position: fixed` descendant (nav.main-nav's
+   off-canvas drawer) and interrupts containing-block resolution for
+   `position: absolute` descendants (the desktop dropdown) -- both assume the
+   containing block is further up the tree (the viewport, or the fixed outer
+   <header> tag). `!important` needed: plain specificity (0,0,2,0) does not
+   beat Horizon's `.header{contain:layout style}` (0,0,1,0) in production,
+   likely because compiled_assets/styles.css loads in a CSS cascade layer,
+   which outranks unlayered author styles for normal-priority declarations
+   regardless of specificity. Verified live: closed drawer top -108px -> full
+   viewport height; open drawer left 30px -> 0, width -> full viewport;
+   desktop dropdown right edge 1867px -> 2434px (viewport minus scrollbar) at
+   a 2445px-wide viewport.
+
+   IMPORTANT: this rule must also exist in assets/main.min.css -- that is the
+   file actually loaded by layout/theme.liquid (main.css is source/reference
+   only, not requested by the browser; see R28/R30 comments in theme.liquid).
+   Keep both in sync by hand; there's no build step that regenerates one from
+   the other. */
+.wrap-header .header {
+  contain: none !important;
+}

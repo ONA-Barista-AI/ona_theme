@@ -5,24 +5,24 @@
   const PAGE_SIZE = 12;
 
   const STYLE_ARRAY = [
-    {elementType:"geometry",stylers:[{color:"#dedede"}]},
+    {elementType:"geometry",stylers:[{color:"#ececec"}]},
     {elementType:"labels.icon",stylers:[{visibility:"off"}]},
-    {elementType:"labels.text.fill",stylers:[{color:"#616161"}]},
-    {elementType:"labels.text.stroke",stylers:[{color:"#f5f5f5"}]},
-    {featureType:"administrative.land_parcel",elementType:"labels.text.fill",stylers:[{color:"#bdbdbd"}]},
-    {featureType:"poi",elementType:"geometry",stylers:[{color:"#eeeeee"}]},
-    {featureType:"poi",elementType:"labels.text.fill",stylers:[{color:"#757575"}]},
-    {featureType:"poi.park",elementType:"geometry",stylers:[{color:"#c9c9c9"}]},
-    {featureType:"poi.park",elementType:"labels.text.fill",stylers:[{color:"#9e9e9e"}]},
+    {elementType:"labels.text.fill",stylers:[{color:"#7a7a7a"}]},
+    {elementType:"labels.text.stroke",stylers:[{color:"#fafafa"}]},
+    {featureType:"administrative.land_parcel",elementType:"labels.text.fill",stylers:[{color:"#cfcfcf"}]},
+    {featureType:"poi",elementType:"geometry",stylers:[{color:"#f4f4f4"}]},
+    {featureType:"poi",elementType:"labels.text.fill",stylers:[{color:"#8a8a8a"}]},
+    {featureType:"poi.park",elementType:"geometry",stylers:[{color:"#dcdcdc"}]},
+    {featureType:"poi.park",elementType:"labels.text.fill",stylers:[{color:"#b0b0b0"}]},
     {featureType:"road",elementType:"geometry",stylers:[{color:"#ffffff"}]},
-    {featureType:"road.arterial",elementType:"labels.text.fill",stylers:[{color:"#757575"}]},
-    {featureType:"road.highway",elementType:"geometry",stylers:[{color:"#9c9c9c"}]},
-    {featureType:"road.highway",elementType:"labels.text.fill",stylers:[{color:"#616161"}]},
-    {featureType:"road.local",elementType:"labels.text.fill",stylers:[{color:"#9e9e9e"}]},
-    {featureType:"transit.line",elementType:"geometry",stylers:[{color:"#c7c7c7"}]},
-    {featureType:"transit.station",elementType:"geometry",stylers:[{color:"#dedede"}]},
-    {featureType:"water",elementType:"geometry",stylers:[{color:"#a3a3a3"}]},
-    {featureType:"water",elementType:"labels.text.fill",stylers:[{color:"#9e9e9e"}]}
+    {featureType:"road.arterial",elementType:"labels.text.fill",stylers:[{color:"#8a8a8a"}]},
+    {featureType:"road.highway",elementType:"geometry",stylers:[{color:"#c2c2c2"}]},
+    {featureType:"road.highway",elementType:"labels.text.fill",stylers:[{color:"#7a7a7a"}]},
+    {featureType:"road.local",elementType:"labels.text.fill",stylers:[{color:"#b0b0b0"}]},
+    {featureType:"transit.line",elementType:"geometry",stylers:[{color:"#dcdcdc"}]},
+    {featureType:"transit.station",elementType:"geometry",stylers:[{color:"#ececec"}]},
+    {featureType:"water",elementType:"geometry",stylers:[{color:"#c4c4c4"}]},
+    {featureType:"water",elementType:"labels.text.fill",stylers:[{color:"#b0b0b0"}]}
   ];
 
   document.querySelectorAll('.ona-sf').forEach(initSection);
@@ -55,6 +55,8 @@
     const pageListEl = root.querySelector('[data-ona-sf-page-list]');
 
     let activeTags = new Set();
+    let activeStates = new Set();
+    const AU_STATES = new Set(['ACT','NSW','NT','QLD','SA','TAS','VIC','WA']);
     let userPos = null;
     let maxDistanceKm = Infinity;
     let currentPage = 1;
@@ -65,6 +67,9 @@
     let mapBounds = null; // google.maps.LatLngBounds — when set, only stores within these bounds are visible
     let userPannedMap = false;
     let activeMarkerId = null; // ID of currently-clicked store — always kept visible
+    let clusterer = null;
+    let activeBouncingMarker = null;
+    let initialUserPos = null; // captured from auto-geolocation on page load, preserved across Clear filters
 
     function haversineKm(lat1, lng1, lat2, lng2) {
       const R = 6371;
@@ -105,6 +110,18 @@
       cards.forEach(card => {
         const d = getCardData(card);
         const matchTags = tagSet.size === 0 || d.tags.some(t => tagSet.has(t));
+        let matchState = true;
+        if (activeStates.size > 0) {
+          const s = (card.dataset.state || '').toUpperCase();
+          if (activeStates.has('__intl')) {
+            // International = state not one of AU states
+            matchState = !AU_STATES.has(s);
+            // OR any explicit state also selected
+            if (!matchState) matchState = activeStates.has(s);
+          } else {
+            matchState = activeStates.has(s);
+          }
+        }
         let matchDistance = true;
         if (userPos && isFinite(maxDistanceKm) && maxDistanceKm < Infinity) {
           if (!isValidCoord(d.lat, d.lng)) {
@@ -126,7 +143,7 @@
             matchBounds = mapBounds.contains(new google.maps.LatLng(d.lat, d.lng));
           }
         }
-        const match = !searchFailed && matchTags && matchDistance && matchBounds;
+        const match = !searchFailed && matchTags && matchState && matchDistance && matchBounds;
         card.dataset.matchFilter = match ? '1' : '0';
         if (match) visibleAfterFilter.push(card);
       });
@@ -167,7 +184,19 @@
         });
       }
 
-      if (countEl) countEl.textContent = visibleAfterFilter.length + (visibleAfterFilter.length === 1 ? ' store' : ' stores');
+      const clearBtn = root.querySelector('[data-ona-sf-clear-filters]');
+      if (clearBtn) {
+        const sliderMax = distanceSlider ? parseFloat(distanceSlider.max) : Infinity;
+        const distanceActive = isFinite(maxDistanceKm) && maxDistanceKm < sliderMax;
+        const searchActive = searchInput && searchInput.value.trim() !== '';
+        const hasFilters = activeTags.size > 0 || activeStates.size > 0 || distanceActive || searchActive || userPannedMap;
+        clearBtn.hidden = !hasFilters;
+      }
+
+      if (countEl) {
+        const noun = visibleAfterFilter.length === 1 ? 'store' : 'stores';
+        countEl.innerHTML = '<span class="ona-sf__count-num">' + visibleAfterFilter.length + '</span> ' + noun + ' found in the current map view';
+      }
       if (emptyEl) {
         emptyEl.hidden = visibleAfterFilter.length > 0;
         const emptySearchMsg = emptyEl.querySelector('[data-ona-sf-empty-search]');
@@ -182,6 +211,12 @@
       if (!opts.preservePage) currentPage = 1;
 
       applyPagination(visibleAfterFilter);
+
+      // Refresh custom scrollbar (display changes on child cards don't bubble through MutationObserver)
+      if (window.__onaSfRefreshScrollbar) {
+        if (visibleAfterFilter.length === 0 && listEl) listEl.scrollTop = 0;
+        requestAnimationFrame(window.__onaSfRefreshScrollbar);
+      }
 
       if (map) syncMarkers();
     }
@@ -244,6 +279,51 @@
       });
     }
 
+    let bounceOverlay = null;
+    function setActiveBounce(m) {
+      // Remove previous overlay + restore previous marker
+      if (bounceOverlay) {
+        bounceOverlay.setMap(null);
+        bounceOverlay = null;
+      }
+      if (activeBouncingMarker && activeBouncingMarker !== m) {
+        // Show the previous marker again
+        activeBouncingMarker.setOpacity(1);
+      }
+      activeBouncingMarker = m || null;
+      if (!m || !markerIcon) return;
+      // Hide the underlying marker so only our animated overlay is visible
+      m.setOpacity(0);
+      // Build a one-off OverlayView class lazily
+      if (!window.__OnaSfBouncingOverlay) {
+        function OvrCtor() { google.maps.OverlayView.apply(this, arguments); }
+        OvrCtor.prototype = Object.create(google.maps.OverlayView.prototype);
+        OvrCtor.prototype.constructor = OvrCtor;
+        OvrCtor.prototype.onAdd = function() {
+          const div = document.createElement('div');
+          div.className = 'ona-sf__active-marker';
+          div.innerHTML = '<img src="' + this._iconUrl + '" alt="">';
+          this._div = div;
+          this.getPanes().floatPane.appendChild(div);
+        };
+        OvrCtor.prototype.draw = function() {
+          const proj = this.getProjection();
+          if (!proj || !this._div) return;
+          const pt = proj.fromLatLngToDivPixel(this._pos);
+          this._div.style.left = (pt.x - 14) + 'px';
+          this._div.style.top = (pt.y - 38) + 'px';
+        };
+        OvrCtor.prototype.onRemove = function() {
+          if (this._div && this._div.parentNode) this._div.parentNode.removeChild(this._div);
+          this._div = null;
+        };
+        window.__OnaSfBouncingOverlay = OvrCtor;
+      }
+      bounceOverlay = new window.__OnaSfBouncingOverlay();
+      bounceOverlay._pos = m.getPosition();
+      bounceOverlay._iconUrl = markerIcon;
+      bounceOverlay.setMap(map);
+    }
     function activateCard(id) {
       cards.forEach(c => c.classList.toggle('is-active', c.dataset.id === id));
       const target = cards.find(c => c.dataset.id === id);
@@ -279,6 +359,30 @@
       });
     });
 
+    // State chips
+    root.querySelectorAll('[data-ona-sf-state]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const st = chip.dataset.onaSfState;
+        if (st === '__all') {
+          activeStates.clear();
+          root.querySelectorAll('[data-ona-sf-state]').forEach(c => c.classList.remove('is-active'));
+          chip.classList.add('is-active');
+        } else {
+          const allChip = root.querySelector('[data-ona-sf-state="__all"]');
+          if (allChip) allChip.classList.remove('is-active');
+          if (activeStates.has(st)) {
+            activeStates.delete(st);
+            chip.classList.remove('is-active');
+          } else {
+            activeStates.add(st);
+            chip.classList.add('is-active');
+          }
+          if (activeStates.size === 0 && allChip) allChip.classList.add('is-active');
+        }
+        applyFilters();
+      });
+    });
+
     // Search input — Enter routes through the same unified geocodeAndUse flow as the button
     const searchClearBtn = root.querySelector('[data-ona-sf-search-clear]');
     function refreshSearchClearBtn() {
@@ -306,21 +410,32 @@
     }
     refreshSearchClearBtn();
 
-    // Reset
-    const resetBtn = root.querySelector('[data-ona-sf-reset]');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
+    // Reset — multiple buttons share data-ona-sf-reset (toolbar + empty-state)
+    function handleReset() {
         activeTags.clear();
-        if (searchInput) searchInput.value = '';
+        activeStates.clear();
+        if (searchInput) { searchInput.value = ''; refreshSearchClearBtn && refreshSearchClearBtn(); }
         searchFailed = false;
         userPannedMap = false;
         mapBounds = null;
+        // Restore original auto-detected location if we have it; else null
+        userPos = initialUserPos ? { lat: initialUserPos.lat, lng: initialUserPos.lng } : null;
+        maxDistanceKm = Infinity;
+        if (distanceSlider) {
+          distanceSlider.value = distanceSlider.max;
+          updateSliderUI && updateSliderUI();
+        }
+        if (distanceFilter) distanceFilter.classList.toggle('is-active', !!userPos);
+        if (distanceAnchorEl) distanceAnchorEl.textContent = userPos ? 'your location' : '—';
         root.querySelectorAll('[data-ona-sf-tag]').forEach(c => c.classList.remove('is-active'));
         const allChip = root.querySelector('[data-ona-sf-tag="__all"]');
         if (allChip) allChip.classList.add('is-active');
+        root.querySelectorAll('[data-ona-sf-state]').forEach(c => c.classList.remove('is-active'));
+        const allStateChip = root.querySelector('[data-ona-sf-state="__all"]');
+        if (allStateChip) allStateChip.classList.add('is-active');
         applyFilters();
-      });
     }
+    root.querySelectorAll('[data-ona-sf-reset]').forEach(btn => btn.addEventListener('click', handleReset));
 
     // Distance slider — visible always, but disabled until user position is known
     function computeMaxDistance(originLat, originLng) {
@@ -351,9 +466,16 @@
       const max = parseFloat(distanceSlider.max);
       const val = parseFloat(distanceSlider.value);
       const pct = ((val - min) / (max - min)) * 100;
+      const frac = (val - min) / (max - min);
       const trackWrap = distanceSlider.parentElement;
-      if (trackWrap) trackWrap.style.setProperty('--ona-sf-rs-pct', pct + '%');
-      if (distanceFilter) distanceFilter.style.setProperty('--ona-sf-rs-pct', pct + '%');
+      if (trackWrap) {
+        trackWrap.style.setProperty('--ona-sf-rs-pct', pct + '%');
+        trackWrap.style.setProperty('--ona-sf-rs-frac', frac);
+      }
+      if (distanceFilter) {
+        distanceFilter.style.setProperty('--ona-sf-rs-pct', pct + '%');
+        distanceFilter.style.setProperty('--ona-sf-rs-frac', frac);
+      }
       if (distanceBubble) distanceBubble.textContent = val + ' km';
       if (distanceValueEl) distanceValueEl.textContent = distanceSlider.value;
     }
@@ -480,7 +602,7 @@
         mapBounds = null;
         if (map) {
           map.setCenter({lat, lng});
-          map.setZoom(11);
+          map.setZoom(13);
         }
         applyFilters();
         return;
@@ -578,15 +700,15 @@
         }
         nearMeBtn.disabled = true;
         navigator.geolocation.getCurrentPosition(
-          pos => { nearMeBtn.disabled = false; switchToMap(); setUserPos(pos.coords.latitude, pos.coords.longitude, 'your location', 'search'); },
-          () => { nearMeBtn.disabled = false; switchToMap(); setUserPos(fallbackLat, fallbackLng, 'Canberra', 'search'); },
-          { timeout: 8000 }
+          pos => { nearMeBtn.disabled = false; switchToMap(); setUserPos(pos.coords.latitude, pos.coords.longitude, 'your location', 'nearby'); },
+          () => { nearMeBtn.disabled = false; switchToMap(); setUserPos(fallbackLat, fallbackLng, 'Canberra', 'nearby'); },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       });
     }
 
-    // View toggle
-    layout.setAttribute('data-view', 'list');
+    // View toggle — start in map view by default
+    layout.setAttribute('data-view', 'map');
     root.querySelectorAll('[data-ona-sf-view]').forEach(btn => {
       btn.addEventListener('click', () => {
         const v = btn.dataset.onaSfView;
@@ -600,8 +722,6 @@
               requestAnimationFrame(() => {
                 if (!map) return;
                 google.maps.event.trigger(map, 'resize');
-                // Only auto-fit to all markers if the user hasn't already searched/panned.
-                // Otherwise we'd clobber the search-induced bounds.
                 if (!userPannedMap) {
                   fitToVisibleMarkers();
                 }
@@ -609,6 +729,8 @@
             });
           });
         }
+        // Update custom scrollbar when switching views
+        if (window.__onaSfRefreshScrollbar) requestAnimationFrame(window.__onaSfRefreshScrollbar);
       });
     });
 
@@ -626,6 +748,17 @@
         document.head.appendChild(s);
       });
       return mapInitPromise;
+    }
+    function loadClusterer() {
+      if (window.markerClusterer) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
     }
 
     function ensureMap() {
@@ -647,7 +780,13 @@
         const iwMaxWidth = isMobileViewport() ? Math.min(window.innerWidth - 40, 400) : 320;
         infoWindow = new google.maps.InfoWindow({maxWidth: iwMaxWidth});
         infoWindow.addListener('closeclick', () => {
+          // Return the active marker back to clusterer
+          if (activeMarkerId && clusterer) {
+            const prev = markers.get(activeMarkerId);
+            if (prev) { prev.setMap(null); clusterer.addMarker(prev); }
+          }
           activeMarkerId = null;
+          setActiveBounce(null);
           cards.forEach(c => c.classList.remove('is-active'));
           applyFilters({preservePage: true});
         });
@@ -672,20 +811,61 @@
 
         syncMarkers();
         attachAutocomplete();
+        // Init clusterer once map is ready
+        loadClusterer().then(() => {
+          if (!window.markerClusterer || clusterer) return;
+          // Custom burgundy cluster icon (SVG inline)
+          const renderer = {
+            render: ({count, position}) => {
+              const size = count < 10 ? 40 : count < 50 ? 48 : count < 100 ? 56 : 64;
+              const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="#661a34" fill-opacity="0.92" stroke="#fff" stroke-width="2"/></svg>`;
+              return new google.maps.Marker({
+                position,
+                icon: {
+                  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+                  scaledSize: new google.maps.Size(size, size),
+                  anchor: new google.maps.Point(size/2, size/2)
+                },
+                label: { text: String(count), color: '#fff', fontFamily: 'Karla, sans-serif', fontSize: '14px', fontWeight: '700' },
+                zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count
+              });
+            }
+          };
+          clusterer = new window.markerClusterer.MarkerClusterer({
+            map,
+            markers: Array.from(markers.values()).filter(m => m.getMap()),
+            renderer
+          });
+        }).catch(() => {});
         return map;
       });
     }
 
     function buildInfoContent(d) {
+      const pinIcon = '<svg class="ona-sf__iw-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+      const clockIcon = '<svg class="ona-sf__iw-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
       const directions = d.directionsUrl ? `<a href="${d.directionsUrl}" target="_blank" rel="noopener" class="ona-sf__iw-btn">Get directions</a>` : '';
       const website = d.websiteUrl ? `<a href="${d.websiteUrl}" target="_blank" rel="noopener" class="ona-sf__iw-btn ona-sf__iw-btn--secondary">Website</a>` : '';
-      const hours = d.hoursHtml ? `<div class="ona-sf__iw-hours">${d.hoursHtml}</div>` : '';
+      // hoursHtml from card already contains a child .ona-sf__card-hours-text with the actual time text.
+      // Pull just the text portion to render inline beside the clock icon.
+      let hoursTextHtml = '';
+      if (d.hoursHtml) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = d.hoursHtml;
+        const textEl = tmp.querySelector('.ona-sf__card-hours-text');
+        hoursTextHtml = textEl ? textEl.innerHTML : d.hoursHtml;
+      }
+      const hours = hoursTextHtml ? `<div class="ona-sf__iw-hours">${clockIcon}<div class="ona-sf__iw-hours-text">${hoursTextHtml}</div></div>` : '';
+      const addr = `<p class="ona-sf__iw-addr">${pinIcon}<span>${escapeHtml(d.address)}</span></p>`;
       const actions = (directions || website) ? `<div class="ona-sf__iw-actions">${directions}${website}</div>` : '';
-      return `<div class="ona-sf__iw"><h4>${escapeHtml(d.title)}</h4><div class="ona-sf__iw-body"><p>${escapeHtml(d.address)}</p>${hours}</div>${actions}</div>`;
+      return `<div class="ona-sf__iw"><h4>${escapeHtml(d.title)}</h4><div class="ona-sf__iw-body">${addr}${hours}</div>${actions}</div>`;
     }
 
     function syncMarkers() {
       if (!map) return;
+      const newlyCreated = [];
+      const showing = [];
+      const hidden = [];
       cards.forEach(card => {
         const d = getCardData(card);
         const inFilter = card.dataset.matchFilter === '1';
@@ -693,7 +873,8 @@
         if (!m && inFilter && isValidCoord(d.lat, d.lng)) {
           m = new google.maps.Marker({
             position: {lat: d.lat, lng: d.lng},
-            map,
+            // When clusterer is active, marker.map is managed by it; otherwise attach directly
+            map: clusterer ? null : map,
             title: d.title,
             icon: markerIcon ? {
               url: markerIcon,
@@ -701,12 +882,28 @@
               anchor: new google.maps.Point(14, 38)
             } : undefined
           });
+          newlyCreated.push(m);
           m.addListener('click', () => {
+            // Close any existing InfoWindow first so its DOM is rebuilt cleanly on next open
+            infoWindow.close();
+            // Detach active marker from clusterer so it stays alive while InfoWindow is open
+            if (clusterer) {
+              if (activeMarkerId && markers.get(activeMarkerId) !== m) {
+                const prev = markers.get(activeMarkerId);
+                if (prev) { prev.setMap(null); clusterer.addMarker(prev); }
+              }
+              clusterer.removeMarker(m);
+              m.setMap(map);
+            }
             activeMarkerId = d.id;
+            setActiveBounce(m);
             const iwW = isMobileViewport() ? Math.min(window.innerWidth - 40, 400) : 320;
             infoWindow.setOptions({maxWidth: iwW});
             infoWindow.setContent(buildInfoContent(d));
-            infoWindow.open(map, m);
+            // Defer open one frame to let the close DOM teardown settle
+            requestAnimationFrame(() => {
+              infoWindow.open(map, m);
+            });
             cards.forEach(c => c.classList.toggle('is-active', c.dataset.id === d.id));
             applyFilters({preservePage: true});
             const target = cards.find(c => c.dataset.id === d.id);
@@ -721,10 +918,31 @@
             }
           });
           markers.set(d.id, m);
+          if (inFilter) showing.push(m);
         } else if (m) {
-          m.setMap(inFilter ? map : null);
+          if (inFilter) {
+            showing.push(m);
+            if (!clusterer) m.setMap(map);
+          } else {
+            hidden.push(m);
+            if (!clusterer) m.setMap(null);
+          }
         }
       });
+      // Freeze clusterer rebuild while InfoWindow is open (active marker set).
+      // Touching markers' .map while InfoWindow is anchored makes it close prematurely.
+      if (clusterer && !activeMarkerId) {
+        clusterer.clearMarkers();
+        clusterer.addMarkers(showing);
+      }
+      if (activeMarkerId) {
+        const am = markers.get(activeMarkerId);
+        if (am) {
+          if (am.getMap() !== map) am.setMap(map);
+          // Re-apply bounce overlay if it got lost in rebuild
+          if (!bounceOverlay) setActiveBounce(am);
+        }
+      }
     }
 
     function fitToVisibleMarkers() {
@@ -757,17 +975,24 @@
       searchInput.dataset.acAttached = '1';
     }
 
+    function focusMarker(id) {
+      const m = markers.get(id);
+      if (!map || !m) return;
+      const pos = m.getPosition();
+      map.panTo(pos);
+      // Zoom in past clustering threshold so the marker shows individually
+      const targetZoom = 16;
+      if (map.getZoom() < targetZoom) map.setZoom(targetZoom);
+      // Give clusterer one frame to recalc, then open InfoWindow
+      setTimeout(() => {
+        google.maps.event.trigger(m, 'click');
+      }, 250);
+    }
     cards.forEach(card => {
       card.addEventListener('click', e => {
         if (e.target.closest('a, button')) return;
-        // Only act on card click in map view (sync card → pin). In list view do nothing.
         if (!isMapView()) return;
-        const id = card.dataset.id;
-        activateCard(id);
-        if (map) {
-          const m = markers.get(id);
-          if (m) google.maps.event.trigger(m, 'click');
-        }
+        focusMarker(card.dataset.id);
       });
     });
 
@@ -776,6 +1001,83 @@
     }
 
     loadGoogleMaps().then(attachAutocomplete).catch(() => {});
+
+    // Initial map view: ensure map is created and fit to all markers
+    ensureMap().then(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (!map) return;
+          google.maps.event.trigger(map, 'resize');
+          if (!userPannedMap) fitToVisibleMarkers();
+        });
+      });
+    });
+
+    // Custom scrollbar with grab cursor (only shown when list is in map view + overflowing)
+    let scrollBarEl, scrollThumbEl;
+    (function initCustomScrollbar() {
+      if (!listEl) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'ona-sf__list-wrap';
+      listEl.parentNode.insertBefore(wrap, listEl);
+      wrap.appendChild(listEl);
+      scrollBarEl = document.createElement('div');
+      scrollBarEl.className = 'ona-sf__scrollbar';
+      scrollThumbEl = document.createElement('div');
+      scrollThumbEl.className = 'ona-sf__scrollbar-thumb';
+      scrollBarEl.appendChild(scrollThumbEl);
+      wrap.appendChild(scrollBarEl);
+
+      function update() {
+        const visible = listEl.clientHeight;
+        const total = listEl.scrollHeight;
+        // Only show in map view + when actually scrollable + on desktop (mobile uses page scroll)
+        const inMap = isMapView();
+        const shouldShow = inMap && total > visible + 4 && !isMobileViewport();
+        scrollBarEl.classList.toggle('is-visible', shouldShow);
+        if (!shouldShow) return;
+        const trackH = scrollBarEl.clientHeight;
+        const thumbH = Math.max(24, Math.floor((visible / total) * trackH));
+        scrollThumbEl.style.height = thumbH + 'px';
+        const maxScroll = total - visible;
+        const pct = maxScroll > 0 ? listEl.scrollTop / maxScroll : 0;
+        scrollThumbEl.style.top = (pct * (trackH - thumbH)) + 'px';
+      }
+
+      listEl.addEventListener('scroll', update);
+      window.addEventListener('resize', update);
+      // MutationObserver to re-update when cards change
+      const mo = new MutationObserver(update);
+      mo.observe(listEl, {childList: true, subtree: false, attributes: true, attributeFilter: ['style']});
+
+      // Drag thumb
+      let dragging = false, dragStartY = 0, dragStartScroll = 0;
+      scrollThumbEl.addEventListener('mousedown', e => {
+        dragging = true;
+        scrollThumbEl.classList.add('is-dragging');
+        dragStartY = e.clientY;
+        dragStartScroll = listEl.scrollTop;
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        const trackH = scrollBarEl.clientHeight;
+        const thumbH = scrollThumbEl.clientHeight;
+        const maxScroll = listEl.scrollHeight - listEl.clientHeight;
+        const ratio = maxScroll / (trackH - thumbH);
+        listEl.scrollTop = dragStartScroll + (e.clientY - dragStartY) * ratio;
+      });
+      document.addEventListener('mouseup', () => {
+        if (!dragging) return;
+        dragging = false;
+        scrollThumbEl.classList.remove('is-dragging');
+      });
+
+      // Initial paint + on view change
+      update();
+      // Expose for view-toggle / filter callers
+      window.__onaSfRefreshScrollbar = update;
+    })();
 
     // Re-apply pagination when crossing mobile/desktop breakpoint
     let lastIsMobile = isMobileViewport();
@@ -793,7 +1095,10 @@
     // (slider will fall back to Canberra only when user actively drags it).
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => setUserPos(pos.coords.latitude, pos.coords.longitude, 'your location', 'nearby'),
+        pos => {
+          initialUserPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserPos(pos.coords.latitude, pos.coords.longitude, 'your location', 'nearby');
+        },
         () => {},
         { timeout: 6000, maximumAge: 600000 }
       );

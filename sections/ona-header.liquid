@@ -166,16 +166,17 @@
 
               <cart-drawer-component
                 class="cart-drawer"
-                {% if settings.auto_open_cart_drawer %}auto-open{% endif %}
+                auto-open
               >
                 <template id="empty-cart-template">{{ empty_cart_drawer_content }}</template>
 
-                {%- comment -%} Trigger is a plain link to /cart (NOT a drawer-open button).
-                     Drawer still auto-opens on add-to-cart via cart-drawer-component. {%- endcomment -%}
                 <cart-icon
                   class="header-actions__cart-icon{% unless cart == empty %} header-actions__cart-icon--has-cart{% endunless %}"
                   data-testid="cart-icon"
                 >
+                  {%- comment -%} Trigger is a plain link to /cart. Drawer still
+                       auto-opens on add-to-cart via cart-drawer-component's
+                       auto-open attribute. {%- endcomment -%}
                   <a
                     href="{{ routes.cart_url }}"
                     class="ona-cart-trigger"

@@ -10,59 +10,84 @@
   <div class="ona-sf__inner">
     <h2 class="ona-sf__heading">{{ heading }}</h2>
 
-    <div class="ona-sf__searchbar">
-      <div class="ona-sf__search-wrap">
-        <input type="text"
-               class="ona-sf__search"
-               id="ona-sf-search-{{ section.id }}"
-               placeholder="Search a store name, suburb or address — press Enter or click the button"
-               aria-label="Search location">
-        <button type="button" class="ona-sf__search-clear" data-ona-sf-search-clear aria-label="Clear search" hidden>&times;</button>
+    <div class="ona-sf__searchbar-row">
+      <div class="ona-sf__searchbar">
+        <div class="ona-sf__search-wrap">
+          <svg class="ona-sf__search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.65" y2="16.65"/></svg>
+          <input type="text"
+                 class="ona-sf__search"
+                 id="ona-sf-search-{{ section.id }}"
+                 placeholder="Search a store name, suburb or address"
+                 aria-label="Search location">
+          <button type="button" class="ona-sf__search-clear" data-ona-sf-search-clear aria-label="Clear search" hidden>&times;</button>
+        </div>
+        <button type="button" class="ona-sf__near-me" data-ona-sf-near-me>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+          Use my location
+        </button>
       </div>
-      <button type="button" class="ona-sf__near-me" data-ona-sf-near-me>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
-        Use my location
-      </button>
+      <button type="button" class="ona-sf__clear-filters" data-ona-sf-reset data-ona-sf-clear-filters hidden>Clear filters</button>
     </div>
 
-    {%- if all_tags.size > 0 -%}
-      <div class="ona-sf__filters" role="group" aria-label="Filter by tag">
-        <button type="button" class="ona-sf__chip is-active" data-ona-sf-tag="__all">All</button>
-        {%- for tag in all_tags -%}
-          <button type="button" class="ona-sf__chip" data-ona-sf-tag="{{ tag.slug.value }}">{{ tag.label.value }}</button>
-        {%- endfor -%}
-      </div>
-    {%- endif -%}
+    <div class="ona-sf__refine">
+      {%- if all_tags.size > 0 -%}
+        <div class="ona-sf__group">
+          <div class="ona-sf__filters" role="group" aria-label="Filter by tag">
+            <button type="button" class="ona-sf__chip is-active" data-ona-sf-tag="__all">All Venues</button>
+            {%- for tag in all_tags -%}
+              <button type="button" class="ona-sf__chip" data-ona-sf-tag="{{ tag.slug.value }}">{{ tag.label.value }}</button>
+            {%- endfor -%}
+          </div>
+        </div>
+      {%- endif -%}
 
-    <div class="ona-sf__rs" data-ona-sf-distance-filter>
-      <div class="ona-sf__rs-summary">
-        Within <strong data-ona-sf-distance-value>500</strong> km of <strong data-ona-sf-distance-anchor>—</strong>
-      </div>
-      <div class="ona-sf__rs-track-wrap">
-        <span class="ona-sf__rs-bubble" data-ona-sf-rs-bubble>500</span>
-        <input type="range" min="1" max="500" value="500" step="1" class="ona-sf__rs-input" data-ona-sf-distance-slider aria-label="Maximum distance in kilometres">
-        <div class="ona-sf__rs-ticks" aria-hidden="true">
-          <span>1 km</span><span>100 km</span><span>200 km</span><span>300 km</span><span>400 km</span><span>500 km</span>
+      <div class="ona-sf__group">
+        <div class="ona-sf__filters ona-sf__filters--states" role="group" aria-label="Filter by location">
+          <button type="button" class="ona-sf__chip is-active" data-ona-sf-state="__all">All</button>
+          <button type="button" class="ona-sf__chip" data-ona-sf-state="ACT">ACT</button>
+          <button type="button" class="ona-sf__chip" data-ona-sf-state="NSW">NSW</button>
+          <button type="button" class="ona-sf__chip" data-ona-sf-state="NT">NT</button>
+          <button type="button" class="ona-sf__chip" data-ona-sf-state="QLD">QLD</button>
+          <button type="button" class="ona-sf__chip" data-ona-sf-state="SA">SA</button>
+          <button type="button" class="ona-sf__chip" data-ona-sf-state="TAS">TAS</button>
+          <button type="button" class="ona-sf__chip" data-ona-sf-state="VIC">VIC</button>
+          <button type="button" class="ona-sf__chip" data-ona-sf-state="WA">WA</button>
+          <button type="button" class="ona-sf__chip" data-ona-sf-state="__intl">International</button>
         </div>
       </div>
-      <p class="ona-sf__rs-hint" data-ona-sf-distance-hint>Use "Use my location" or search an address to enable distance filtering.</p>
+
+      <div class="ona-sf__group ona-sf__group--distance" data-ona-sf-distance-filter>
+        <div class="ona-sf__rs">
+          <div class="ona-sf__rs-display">
+            <span class="ona-sf__rs-display-num"><span data-ona-sf-distance-value>500</span> km</span>
+            <span class="ona-sf__rs-display-of">from <strong data-ona-sf-distance-anchor>—</strong></span>
+          </div>
+          <div class="ona-sf__rs-track-wrap">
+            <span class="ona-sf__rs-bubble" data-ona-sf-rs-bubble aria-hidden="true">500</span>
+            <input type="range" min="1" max="500" value="500" step="1" class="ona-sf__rs-input" data-ona-sf-distance-slider aria-label="Maximum distance in kilometres">
+            <div class="ona-sf__rs-ticks" aria-hidden="true">
+              <span>1</span><span>100</span><span>200</span><span>300</span><span>400</span><span>500</span>
+            </div>
+          </div>
+          <p class="ona-sf__rs-hint" data-ona-sf-distance-hint>Use "Use my location" or search an address to activate.</p>
+        </div>
+      </div>
     </div>
 
     <div class="ona-sf__toolbar">
       <span class="ona-sf__count" data-ona-sf-count>stores</span>
       <div class="ona-sf__view-toggle" role="tablist">
-        <button type="button" class="ona-sf__view-btn is-active" data-ona-sf-view="list" role="tab">List</button>
-        <button type="button" class="ona-sf__view-btn" data-ona-sf-view="map" role="tab">Map</button>
+        <button type="button" class="ona-sf__view-btn" data-ona-sf-view="list" role="tab">List</button>
+        <button type="button" class="ona-sf__view-btn is-active" data-ona-sf-view="map" role="tab">Map</button>
       </div>
     </div>
 
-    <div class="ona-sf__no-results" data-ona-sf-empty hidden>
-      <p data-ona-sf-empty-filter>No stores match your filters. <button type="button" class="ona-sf__link" data-ona-sf-reset>Clear filters</button></p>
-      <p data-ona-sf-empty-search hidden>No search results found.</p>
-    </div>
-
-    <div class="ona-sf__layout" data-ona-sf-layout>
+    <div class="ona-sf__layout" data-ona-sf-layout data-view="map">
       <div class="ona-sf__list" data-ona-sf-list>
+        <div class="ona-sf__no-results" data-ona-sf-empty hidden>
+          <p data-ona-sf-empty-filter>No stores match your filters. <button type="button" class="ona-sf__link" data-ona-sf-reset>Clear filters</button></p>
+          <p data-ona-sf-empty-search hidden>No search results found.</p>
+        </div>
         {%- paginate shop.metaobjects.store_location.values by 500 -%}
         {%- for loc in shop.metaobjects.store_location.values -%}
           {%- if loc.latitude.value == blank or loc.longitude.value == blank -%}{%- continue -%}{%- endif -%}
@@ -76,6 +101,7 @@
                    data-lat="{{ loc.latitude.value }}"
                    data-lng="{{ loc.longitude.value }}"
                    data-tags="{{ loc_tag_slugs }}"
+                   data-state="{{ loc.state.value | upcase }}"
                    data-search-text="{{ loc.title.value | append: ' ' | append: loc.storeaddress.value | append: ' ' | append: loc.suburb.value | append: ' ' | append: loc.state.value | downcase | escape }}">
             {%- if loc.image.value != blank -%}
               <div class="ona-sf__card-image">
@@ -84,10 +110,18 @@
             {%- endif -%}
             <div class="ona-sf__card-body">
               <h3 class="ona-sf__card-title">{{ loc.title.value }}</h3>
-              <p class="ona-sf__card-address">{{ loc.storeaddress.value }}</p>
-              {%- if loc.time.value != blank -%}
-                <div class="ona-sf__card-hours">{{ loc.time | metafield_tag }}</div>
-              {%- endif -%}
+              <div class="ona-sf__card-meta">
+                <p class="ona-sf__card-address">
+                  <svg class="ona-sf__card-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>{{ loc.storeaddress.value }}</span>
+                </p>
+                {%- if loc.time.value != blank -%}
+                  <div class="ona-sf__card-hours">
+                    <svg class="ona-sf__card-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <div class="ona-sf__card-hours-text">{{ loc.time | metafield_tag }}</div>
+                  </div>
+                {%- endif -%}
+              </div>
               {%- if loc.tags.value.size > 0 -%}
                 <div class="ona-sf__card-tags">
                   {%- for t in loc.tags.value -%}
@@ -162,7 +196,7 @@
     line-height: 1.32;
     letter-spacing: -0.4px;
     color: #2b2c30;
-    margin: 0 0 23px;
+    margin: 0 0 18px;
     font-weight: normal;
   }
   @media (max-width: 1199.98px) {
@@ -180,9 +214,14 @@
   }
   .ona-sf__searchbar {
     display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: 0;
+    margin-bottom: 18px;
     flex-wrap: wrap;
+    max-width: 640px;
+    flex: 1 1 auto;
+  }
+  @media (max-width: 999px) {
+    .ona-sf__searchbar { max-width: 100%; }
   }
   .ona-sf__search-wrap {
     flex: 1;
@@ -190,15 +229,24 @@
     position: relative;
     display: flex;
   }
+  .ona-sf__search-icon {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    color: #888;
+    pointer-events: none;
+  }
   .ona-sf__search {
     flex: 1;
     width: 100%;
     height: 48px;
-    padding: 10px 42px 10px 18px;
+    padding: 10px 42px 10px 40px;
     font: 16px 'Karla', sans-serif;
     color: #2b2c30;
     background: #fff;
     border: 1px solid #9e9f9b;
+    border-right: 0;
     box-sizing: border-box;
   }
   .ona-sf__search:focus { outline: none; border-color: #661a34; }
@@ -228,30 +276,63 @@
     align-items: center;
     gap: 8px;
     height: 48px;
-    padding: 0 18px;
-    background: #fff;
-    border: 1px solid #ccc;
+    padding: 0 20px;
+    background: #661a34;
+    border: 1px solid #661a34;
+    color: #fff;
+    font: 14px 'Karla', sans-serif;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease;
+    white-space: nowrap;
+  }
+  .ona-sf__near-me:hover { background: #2b2c30; border-color: #2b2c30; }
+  .ona-sf__searchbar-row { display: flex; align-items: stretch; gap: 12px; margin-bottom: 0; flex-wrap: wrap; }
+  .ona-sf__searchbar-row .ona-sf__searchbar { margin-bottom: 0; }
+  @media (max-width: 749px) {
+    .ona-sf__searchbar-row > .ona-sf__searchbar { flex: 1 1 100%; max-width: none; }
+    .ona-sf__searchbar-row > .ona-sf__clear-filters { flex: 0 0 auto; }
+  }
+  .ona-sf__clear-filters {
+    display: inline-flex;
+    align-items: center;
+    height: 48px;
+    padding: 0 16px;
+    background: transparent;
+    border: 1px solid #d6d3cc;
     color: #2b2c30;
     font: 14px 'Karla', sans-serif;
+    letter-spacing: 0.4px;
     cursor: pointer;
-    transition: all .15s ease;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+    white-space: nowrap;
   }
-  .ona-sf__near-me:hover { background: #661a34; color: #fff; border-color: #661a34; }
+  .ona-sf__clear-filters:hover { border-color: #661a34; color: #661a34; }
+  .ona-sf__clear-filters[hidden] { display: none; }
+  .ona-sf__refine {
+    margin-bottom: 0;
+  }
+  .ona-sf__group {
+    padding: 16px 0;
+    border-bottom: 1px solid #ebe5d8;
+  }
+  .ona-sf__group--distance { padding: 18px 0; }
   .ona-sf__filters {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 0;
   }
   .ona-sf__chip {
-    padding: 7px 14px;
-    font: 13px 'Karla', sans-serif;
+    padding: 8px 16px;
+    font: 13px/1 'Karla', sans-serif;
+    letter-spacing: 0.2px;
     color: #2b2c30;
     background: #fff;
-    border: 1px solid #ccc;
+    border: 1px solid #d6d3cc;
     border-radius: 999px;
     cursor: pointer;
-    transition: all .15s ease;
+    transition: background-color .2s ease, border-color .2s ease, color .2s ease;
   }
   .ona-sf__chip:hover { border-color: #661a34; color: #661a34; }
   .ona-sf__chip.is-active {
@@ -259,23 +340,56 @@
     color: #fff;
     border-color: #661a34;
   }
-  /* Range slider (cocktailcompass-style) */
-  .ona-sf__rs {
-    margin-bottom: 24px;
-    padding: 16px 20px 20px;
-    background: #fff;
-    border: 1px solid #e3ddd2;
+  /* State filter — typographic tabs instead of chips */
+  .ona-sf__filters--states { gap: 0 22px; }
+  .ona-sf__filters--states .ona-sf__chip {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 6px 0;
+    font: 600 12px/1 'Karla', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #8a8478;
+    position: relative;
   }
-  .ona-sf__rs-summary {
-    font: 14px 'Karla', sans-serif;
+  .ona-sf__filters--states .ona-sf__chip:hover { background: transparent; color: #661a34; }
+  .ona-sf__filters--states .ona-sf__chip.is-active {
+    background: transparent;
+    color: #661a34;
+  }
+  .ona-sf__filters--states .ona-sf__chip.is-active::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -2px;
+    height: 2px;
+    background: #661a34;
+  }
+  .ona-sf__rs-display {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+    font: 14px/1.4 'Karla', sans-serif;
     color: #2b2c30;
-    margin-bottom: 16px;
   }
-  .ona-sf__rs-summary strong { color: #661a34; font-weight: 700; }
+  .ona-sf__rs-display-num { font-weight: 700; color: #661a34; }
+  .ona-sf__rs-display-of { color: #8a8478; margin-left: auto; }
+  .ona-sf__rs-display-of strong { color: #2b2c30; font-weight: 600; }
+  .ona-sf__group--distance:not(.is-active) .ona-sf__rs-display-num,
+  .ona-sf__group--distance:not(.is-active) .ona-sf__rs-display-of strong { color: #aaa; }
+  /* Range slider — flat / inline style */
+  .ona-sf__rs {
+    margin-bottom: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+  }
+  .ona-sf__rs-summary { margin: 0; }
   .ona-sf__rs-track-wrap {
     position: relative;
-    padding-top: 28px;
-    padding-bottom: 18px;
+    padding-top: 4px;
+    padding-bottom: 14px;
   }
   .ona-sf__rs-input {
     -webkit-appearance: none;
@@ -313,8 +427,8 @@
     position: absolute;
     top: 0;
     transform: translateX(-50%);
-    left: var(--ona-sf-rs-pct, 100%);
-    background: #2b2c30;
+    left: calc(9px + var(--ona-sf-rs-frac, 1) * (100% - 18px));
+    background: #661a34;
     color: #fff;
     font: 11px 'Karla', sans-serif;
     padding: 2px 7px;
@@ -329,22 +443,23 @@
     left: 50%;
     transform: translateX(-50%);
     border: 4px solid transparent;
-    border-top-color: #2b2c30;
+    border-top-color: #661a34;
   }
   .ona-sf__rs-ticks {
     display: flex;
     justify-content: space-between;
     margin-top: 10px;
     font: 11px 'Karla', sans-serif;
-    color: #888;
+    color: #661a34;
   }
   .ona-sf__rs-hint {
     margin: 12px 0 0;
-    font: 12px 'Karla', sans-serif;
-    color: #888;
+    font: 12px/1.4 'Karla', sans-serif;
+    color: #999;
+    letter-spacing: 0.2px;
   }
-  .ona-sf__rs.is-active .ona-sf__rs-hint { display: none; }
-  .ona-sf__rs:not(.is-active) .ona-sf__rs-bubble { display: none; }
+  .ona-sf__group--distance.is-active .ona-sf__rs-hint { display: none; }
+  .ona-sf__rs-bubble { display: none; }
   .ona-sf__pagination {
     display: flex;
     justify-content: space-between;
@@ -407,14 +522,15 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #e3ddd2;
-    margin-bottom: 24px;
+    padding: 14px 0;
+    margin-bottom: 0;
   }
   .ona-sf__count {
-    font: 14px 'Karla', sans-serif;
+    font: 13px/1.4 'Karla', sans-serif;
     color: #666;
+    letter-spacing: 0.2px;
   }
+  .ona-sf__count-num { color: #661a34; font-weight: 700; }
   .ona-sf__view-toggle {
     display: inline-flex;
     border: 1px solid #ccc;
@@ -473,9 +589,9 @@
     display: block;
   }
   .ona-sf__card-overview {
-    font: 14px/1.6 'Karla', sans-serif;
+    font: 13px/1.45 'Karla', sans-serif;
     color: #555;
-    margin: 0 0 12px;
+    margin: 0 0 8px;
   }
   .ona-sf__card-overview p:last-child { margin-bottom: 0; }
   .ona-sf__card-body {
@@ -490,17 +606,35 @@
     box-shadow: inset 0 0 0 2px #661a34;
   }
   .ona-sf__card-title {
-    font: 500 22px/1.3 'Karla', sans-serif;
+    font: 500 19px/1.25 'Karla', sans-serif;
     color: #2b2c30;
-    margin: 0 0 6px;
+    margin: 0 0 12px;
   }
+  .ona-sf__card-meta { margin-bottom: 14px; }
   .ona-sf__card-address {
-    font: 15px/1.5 'Karla', sans-serif;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font: 14px/1.4 'Karla', sans-serif;
     color: #555;
-    margin: 0 0 10px;
+    margin: 0 0 4px;
   }
-  .ona-sf__card-hours { font: 14px/1.6 'Karla', sans-serif; color: #555; margin-bottom: 10px; }
-  .ona-sf__card-hours p { margin: 0; }
+  .ona-sf__card-hours {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: #555;
+    margin-bottom: 0;
+    font: 14px/1.4 'Karla', sans-serif;
+  }
+  .ona-sf__card-hours-text,
+  .ona-sf__card-hours p,
+  .ona-sf__card-hours div { font: 14px/1.4 'Karla', sans-serif; margin: 0; color: #555; }
+  .ona-sf__card-icon {
+    flex-shrink: 0;
+    margin-top: 3px;
+    color: #661a34;
+  }
   .ona-sf__card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
   .ona-sf__card-tag {
     display: inline-block;
@@ -552,6 +686,8 @@
     border: 1px dashed #ccc;
     margin-bottom: 24px;
   }
+  /* Empty state lives inside the list; in grid layout span all columns */
+  .ona-sf__list .ona-sf__no-results { grid-column: 1 / -1; margin-bottom: 0; }
   .ona-sf__link {
     background: none;
     border: 0;
@@ -569,7 +705,7 @@
     text-decoration: underline;
   }
   .ona-sf__map-wrap { display: none; width: 100%; }
-  .ona-sf__map { width: 100%; height: 100%; min-height: 600px; background: #dedede; }
+  .ona-sf__map { width: 100%; height: 100%; background: #dedede; }
   /* Map view: split layout (list left, sticky map right) */
   .ona-sf__layout[data-view="map"] {
     display: grid;
@@ -578,11 +714,13 @@
     align-items: start;
   }
   .ona-sf__layout[data-view="map"] .ona-sf__map-wrap,
+  .ona-sf__layout[data-view="map"] .ona-sf__list-wrap,
   .ona-sf__layout[data-view="map"] .ona-sf__list {
-    height: 60vh;
-    max-height: 600px;
-    min-height: 420px;
+    height: 75vh;
+    max-height: 800px;
+    min-height: 540px;
   }
+  .ona-sf__layout[data-view="map"] .ona-sf__list-wrap > .ona-sf__list { height: 100%; }
   .ona-sf__layout[data-view="map"] .ona-sf__map-wrap {
     display: block;
     position: sticky;
@@ -590,13 +728,95 @@
   }
   .ona-sf__layout[data-view="map"] .ona-sf__list {
     overflow-y: auto;
-    padding-right: 6px;
+    padding-right: 14px;
+    scrollbar-width: none; /* Firefox: hide native scrollbar */
   }
+  .ona-sf__layout[data-view="map"] .ona-sf__list::-webkit-scrollbar { display: none; }
+  /* Custom scrollbar overlay */
+  .ona-sf__list-wrap { position: relative; }
+  .ona-sf__scrollbar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    background: #f1ece4;
+    border-radius: 4px;
+    z-index: 5;
+    display: none;
+  }
+  .ona-sf__scrollbar.is-visible { display: block; }
+  .ona-sf__scrollbar-thumb {
+    position: absolute;
+    left: 0;
+    right: 0;
+    min-height: 24px;
+    background: #661a34;
+    border-radius: 4px;
+    cursor: grab;
+    transition: background-color .15s ease;
+  }
+  .ona-sf__scrollbar-thumb:hover { background: #2b2c30; }
+  .ona-sf__scrollbar-thumb.is-dragging { cursor: grabbing; background: #2b2c30; }
   .ona-sf__layout[data-view="map"] .ona-sf__pagination { display: none; }
+  /* Custom slow-bounce active marker (replaces Google's fixed-speed BOUNCE) */
+  .ona-sf__active-marker {
+    position: absolute;
+    pointer-events: none;
+    transform-origin: center bottom;
+    animation: onaSfBounce 1.6s ease-in-out infinite;
+  }
+  .ona-sf__active-marker img {
+    display: block;
+    width: 28px;
+    height: 38px;
+  }
+  @keyframes onaSfBounce {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-14px); }
+  }
+  /* Hide Google badge + map data attribution (NOTE: violates Google Maps TOS).
+     Scope strictly to the map's own attribution layer so other Google Maps links
+     (e.g. our "Get directions" button) aren't affected. */
+  .gm-style .gm-style-cc,
+  .gm-style a[href^="https://maps.google.com/maps?ll="],
+  .gm-style a[rel="noopener"][title="Report errors in the road map or imagery to Google"],
+  .gm-style > div > a[target="_blank"][href*="maps.google.com"],
+  .gm-style img[src*="google_white"],
+  .gm-style img[src*="google_logo"] {
+    display: none !important;
+  }
+  /* Suppress Google Maps' blue keyboard focus ring (the inline-styled border div) */
+  .gm-style [tabindex]:focus,
+  .gm-style [tabindex]:focus-visible { outline: none !important; }
+  .gm-style div[style*="2px solid rgb(26, 115, 232)"],
+  .gm-style div[style*="2px solid #1A73E8"],
+  .gm-style div[style*="2px solid #1a73e8"] {
+    border: 0 !important;
+    opacity: 0 !important;
+  }
+
   /* InfoWindow content + Google's default container overrides */
+  .gm-style .gm-style-iw,
+  .gm-style .gm-style-iw-c,
+  .gm-style .gm-style-iw-d,
+  .gm-style .gm-style-iw-t,
+  .gm-style .gm-style-iw-tc { outline: none !important; }
+  .gm-style .gm-style-iw-c:focus,
+  .gm-style .gm-style-iw-c:focus-visible,
+  .gm-style .gm-style-iw-d:focus,
+  .gm-style .gm-style-iw-d:focus-visible { outline: none !important; }
   .gm-style .gm-style-iw-c {
     padding: 14px 16px 16px 16px !important;
     max-height: none !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
+    border-radius: 0 !important;
+  }
+  .gm-style .gm-style-iw-ch { padding-top: 0 !important; }
+  .gm-style .gm-style-iw-d { border-radius: 0 !important; }
+  /* The tail/arrow under InfoWindow — keep its drop shadow always */
+  .gm-style .gm-style-iw-tc::after {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
   }
   .gm-style .gm-style-iw-d {
     overflow: hidden !important;
@@ -627,18 +847,41 @@
   }
   .ona-sf__iw h4 {
     font: 500 18px/1.3 'Karla', sans-serif;
-    margin: 0 0 6px;
+    margin: 0 0 12px;
     color: #2b2c30;
   }
-  .ona-sf__iw p { font: 14px/1.5 'Karla', sans-serif; margin: 0 0 8px; color: #555; }
+  .ona-sf__iw p { font: 14px/1.5 'Karla', sans-serif; margin: 0; color: #555; }
   .ona-sf__iw-body {
     max-height: 30vh;
     overflow-y: auto;
     margin-bottom: 12px;
   }
   .ona-sf__iw-body > *:last-child { margin-bottom: 0; }
-  .ona-sf__iw-hours { font: 13px/1.6 'Karla', sans-serif; color: #555; margin-bottom: 12px; }
-  .ona-sf__iw-hours p { margin: 0; }
+  .ona-sf__iw-addr {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font: 14px/1.5 'Karla', sans-serif;
+    color: #555;
+    margin: 0 0 4px;
+  }
+  .ona-sf__iw-addr span { flex: 1; }
+  .ona-sf__iw-hours {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font: 14px/1.5 'Karla', sans-serif;
+    color: #555;
+    margin-bottom: 12px;
+  }
+  .ona-sf__iw-hours-text,
+  .ona-sf__iw-hours-text p,
+  .ona-sf__iw-hours-text div { font: 14px/1.5 'Karla', sans-serif; margin: 0; color: #555; }
+  .ona-sf__iw-icon {
+    flex-shrink: 0;
+    margin-top: 4px;
+    color: #661a34;
+  }
   .ona-sf__iw-btn {
     display: inline-block;
     padding: 8px 14px;
@@ -691,25 +934,38 @@
       height: 100% !important;
       min-height: 0 !important;
     }
+    .ona-sf__layout[data-view="map"] .ona-sf__list-wrap {
+      width: 100%;
+      height: auto !important;
+      max-height: none !important;
+      min-height: 0 !important;
+      order: 2;
+      margin-top: 16px;
+    }
+    .ona-sf__layout[data-view="map"] .ona-sf__list-wrap > .ona-sf__list,
     .ona-sf__layout[data-view="map"] .ona-sf__list {
       display: grid;
       width: 100%;
       height: auto;
-      max-height: 50vh;
+      max-height: none;
       min-height: 0;
-      overflow-y: auto;
-      padding-right: 6px;
-      order: 2;
-      margin-top: 16px;
+      overflow: visible;
+      padding-right: 0;
     }
-    /* Map view on mobile uses scrollable list, not pagination */
+    /* Hide custom scrollbar on mobile — list flows naturally */
+    .ona-sf__layout[data-view="map"] .ona-sf__scrollbar { display: none !important; }
+    /* Map view on mobile uses page scroll, not pagination */
     .ona-sf__layout[data-view="map"] .ona-sf__pagination { display: none !important; }
     /* Tablet (700-999px): 2 columns in list view */
     .ona-sf__list { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 699px) {
-    /* Phone: single column */
+    /* Phone: single column for list, and stack search + button vertically */
     .ona-sf__list { grid-template-columns: 1fr; }
+    .ona-sf__searchbar { flex-direction: column; gap: 10px; }
+    .ona-sf__search-wrap { width: 100%; }
+    .ona-sf__search { border-right: 1px solid #9e9f9b; }
+    .ona-sf__near-me { width: 100%; justify-content: center; }
   }
   @media (max-width: 749px) {
     .ona-sf { padding: 0 0 50px; }

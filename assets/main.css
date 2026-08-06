@@ -30989,3 +30989,33 @@ qbk-inject-order-goal .qbk-order-goal,
 .ona-pc__atc:hover:not([disabled]) { background: #661a34; border-color: #661a34; }
 .ona-pc__atc[disabled] { background: #ccc; border-color: #ccc; cursor: not-allowed; }
 .ona-pc__atc.is-loading { opacity: 0.7; pointer-events: none; }
+
+/* Bug: mobile off-canvas nav (nav.main-nav) doesn't fully hide when closed and
+   doesn't reach the screen edges when open; desktop "Shop"/"Locations" hover
+   dropdown falls short of the true right edge of the screen. Root cause:
+   Shopify Horizon's own platform-compiled CSS (compiled_assets/styles.css,
+   not in this repo) defines `.header { contain: layout style; }` for its
+   native header component. Our custom header (sections/ona-header.liquid)
+   independently reuses the class name `.header` for an unrelated div, so it
+   accidentally inherits that containment too. That makes `.header` the CSS
+   containing block for any `position: fixed` descendant (nav.main-nav's
+   off-canvas drawer) and interrupts containing-block resolution for
+   `position: absolute` descendants (the desktop dropdown) -- both assume the
+   containing block is further up the tree (the viewport, or the fixed outer
+   <header> tag). `!important` needed: plain specificity (0,0,2,0) does not
+   beat Horizon's `.header{contain:layout style}` (0,0,1,0) in production,
+   likely because compiled_assets/styles.css loads in a CSS cascade layer,
+   which outranks unlayered author styles for normal-priority declarations
+   regardless of specificity. Verified live: closed drawer top -108px -> full
+   viewport height; open drawer left 30px -> 0, width -> full viewport;
+   desktop dropdown right edge 1867px -> 2434px (viewport minus scrollbar) at
+   a 2445px-wide viewport.
+
+   IMPORTANT: this rule must also exist in assets/main.min.css -- that is the
+   file actually loaded by layout/theme.liquid (main.css is source/reference
+   only, not requested by the browser; see R28/R30 comments in theme.liquid).
+   Keep both in sync by hand; there's no build step that regenerates one from
+   the other. */
+.wrap-header .header {
+  contain: none !important;
+}

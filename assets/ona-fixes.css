@@ -626,32 +626,10 @@ body.index header .container {
   color: #ffffff;
 }
 
-/* Bug: mobile off-canvas nav (nav.main-nav) doesn't fully hide when closed and
-   doesn't reach the screen edges when open. Root cause: Shopify Horizon's own
-   platform-compiled CSS (compiled_assets/styles.css, not in this repo) defines
-   `.header { contain: layout style; }` for its native header component. Our
-   custom header (sections/ona-header.liquid) independently reuses the class
-   name `.header` for an unrelated div, so it accidentally inherits that
-   containment too. That makes `.header` the CSS containing block for any
-   `position: fixed` descendant -- including nav.main-nav's off-canvas drawer,
-   whose top/left/width rules (main.css ~L1474-1491, ~L24015-24084) assume the
-   containing block is the viewport. Result: `top: -100%` resolves against
-   `.header`'s own ~100-200px height instead of the viewport, so the closed
-   drawer peeks into the header row; `left: 0` / `width: 100%` resolve against
-   `.header`'s box too, which sits inset inside `.container`'s side padding, so
-   the open drawer falls short of the true left/right edges of the screen.
-   Scoped to `.wrap-header .header` (our own unique wrapper) so this never
-   touches Horizon's native header component if that markup is used elsewhere.
-
-   UPDATE: on production, plain specificity (0,0,2,0) was NOT enough to beat
-   Horizon's `.header{contain:layout style}` (0,0,1,0) -- likely because
-   Horizon's compiled_assets/styles.css is loaded via a CSS cascade layer,
-   which outranks unlayered author styles regardless of specificity for
-   normal-priority declarations. Confirmed live: without !important, computed
-   `contain` on our .header div still read "layout style"; with !important it
-   correctly reads "none" and both the mobile drawer and the desktop dropdown's
-   right edge (previously falling short of the true right edge for the exact
-   same reason -- see PR for the second symptom) resolve correctly. */
-.wrap-header .header {
-  contain: none !important;
-}
+/* NOTE (2026-08): this file is NOT loaded by the live theme -- see
+   layout/theme.liquid ("R30 — style.css + ona-fixes.css merged into the
+   tail of main.css. Source files kept as cold backups"). The live site
+   loads assets/main.min.css only. A `.wrap-header .header { contain: none }`
+   fix was added here in error (PRs #37/#38) before that was discovered --
+   it never took effect. The real fix lives in main.css / main.min.css. Do
+   not add fixes to this file; it's dead code kept for historical reference. */

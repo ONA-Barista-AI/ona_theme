@@ -625,3 +625,23 @@ body.index header .container {
 .header-actions__cart-icon .cart-bubble__text-count {
   color: #ffffff;
 }
+
+/* Bug: mobile off-canvas nav (nav.main-nav) doesn't fully hide when closed and
+   doesn't reach the screen edges when open. Root cause: Shopify Horizon's own
+   platform-compiled CSS (compiled_assets/styles.css, not in this repo) defines
+   `.header { contain: layout style; }` for its native header component. Our
+   custom header (sections/ona-header.liquid) independently reuses the class
+   name `.header` for an unrelated div, so it accidentally inherits that
+   containment too. That makes `.header` the CSS containing block for any
+   `position: fixed` descendant -- including nav.main-nav's off-canvas drawer,
+   whose top/left/width rules (main.css ~L1474-1491, ~L24015-24084) assume the
+   containing block is the viewport. Result: `top: -100%` resolves against
+   `.header`'s own ~100-200px height instead of the viewport, so the closed
+   drawer peeks into the header row; `left: 0` / `width: 100%` resolve against
+   `.header`'s box too, which sits inset inside `.container`'s side padding, so
+   the open drawer falls short of the true left/right edges of the screen.
+   Scoped to `.wrap-header .header` (our own unique wrapper) so this never
+   touches Horizon's native header component if that markup is used elsewhere. */
+.wrap-header .header {
+  contain: none;
+}

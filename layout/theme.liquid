@@ -45,6 +45,8 @@
     {% endif %}
 
     {%- render 'meta-tags' -%}
+    {%- render 'meta-robots-pagination' -%}
+    {%- render 'structured-data' -%}
     {%- render 'stylesheets' -%}
     {%- render 'fonts' -%}
     {%- render 'scripts' -%}
@@ -63,6 +65,9 @@
     {%- endcomment -%}
     {{ 'main.min.css' | asset_url | stylesheet_tag }}
     {%- comment -%} Disable WOW / fadeInUp scroll animations site-wide — keep markup intact, just nullify the effect. {%- endcomment -%}
+     {{ 'custom.css' | asset_url | stylesheet_tag }}
+     {{ 'custom-filters.css' | asset_url | stylesheet_tag }}
+     {{ 'ona-product-card.css' | asset_url | stylesheet_tag }}
     <style>
       .wowo, .wowo.animated,
       .fadeIn, .fadeInUp, .fadeInup, .fadeInDown, .fadeInLeft, .zoomOut, .heartBeat,
@@ -75,16 +80,24 @@
     <script src="{{ 'jquery-3.7.1.min.js' | asset_url }}" defer></script>
     {%- comment -%} R49 / Phase B1: jQuery 2.0.3 (unminified, 242K) -> 3.7.1 (minified, 87K). Audit (2026-04-29) found 0 breaking-change call sites in script.js + sections + snippets (no .size/.live/.andSelf/$.browser/etc.). slick.js bundled is 1.8.0 which is officially jQuery 3 compatible. -154K raw / ~-30K gzipped transfer. {%- endcomment -%}
     {%- comment -%} R44 / Phase A1: jquery.cookie.js removed. Cookie read/write now provided by an inline mini impl inside onaEnsureJqStubs() in script.js (see L33). 1 fewer HTTP request, -3K transfer. {%- endcomment -%}
-    <script src="{{ 'TweenMax.min.js' | asset_url }}" defer></script>
-    <script src="{{ 'MorphSVGPlugin.min.js' | asset_url }}" defer></script>
     <script src="{{ 'imagesloaded.pkgd.min.js' | asset_url }}" defer></script>
     <script src="{{ 'slick.min.js' | asset_url }}" defer></script>
     {%- comment -%} R50: slick.js (87K) -> slick.min.js (47K, terser --compress drop_console=true, NO mangle per R38 lesson #46). slick.js kept as cold backup in assets/. {%- endcomment -%}
     {%- comment -%} R44 / Phase A2: WOW.js CDN removed. Replaced by IntersectionObserver IIFE at top of script.js + @keyframes in main.css R44 block. 1 fewer CDN request, ~10K transfer saved, plus removes a top-level new WOW() failure mode (#12). {%- endcomment -%}
     <script src="https://www.youtube.com/iframe_api" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.matchHeight/0.7.2/jquery.matchHeight-min.js" defer></script>
+    <script src="{{ 'jquery.matchHeight-min.js' | asset_url }}" defer></script>
     {%- comment -%} R38: terser-compressed script.js (82K → 48K, -41%, drop_console=true, NO mangle). The full-mangle version caused PC nav hover lag (2026-04-28). {%- endcomment -%}
     <script src="{{ 'script.min.js' | asset_url }}" defer></script>
+    {%- comment -%}
+      Shared variant picker + AJAX Add to cart for every ona-product-card
+      instance site-wide (search results, PDP recommendations, home featured
+      collections) — one implementation instead of the per-section copies
+      this used to be, each with its own independently-drifting bug fixes.
+      __onaAutoOpenCart must be set from the real setting before the module
+      script runs -- a plain JS asset file can't read Liquid settings itself.
+    {%- endcomment -%}
+    <script>window.__onaAutoOpenCart = {{ settings.auto_open_cart_drawer | json }};</script>
+    <script src="{{ 'ona-product-card.js' | asset_url }}" type="module" fetchpriority="low"></script>
 
     {% if request.design_mode %}
       {%- render 'theme-editor' -%}

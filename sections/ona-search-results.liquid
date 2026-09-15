@@ -1,4 +1,7 @@
-{% paginate search.results by 24 %}
+{%- capture limit -%}{%- render 'paginate-page-size' -%}{%- endcapture -%}
+{%- assign limit = limit | strip | plus: 0 -%}
+{%- if limit < 1 -%}{%- assign limit = 24 -%}{%- endif -%}
+{% paginate search.results by limit %}
 <section class="page-title">
   <div class="container">
     {% if search.performed == false %}
@@ -16,10 +19,12 @@
   <div class="container">
     {% if search.performed %}
       {% if search.results_count > 0 %}
+        {% render 'ona-filter-drawer-skin' %}
+        {% content_for 'block', type: 'filters', id: 'filters', results: search, results_size: search.results_count %}
         <div class="shop-list">
           {% for item in search.results %}
             {% if item.object_type == 'product' %}
-              {% render 'ona-product-card', product: item %}
+              {% render 'ona-product-card', product: item, index: forloop.index %}
             {% else %}
               <div class="list">
                 <a href="{{ item.url }}" class="list-box{% if item.image == null %} page-center{% endif %}">
@@ -47,6 +52,8 @@
   </div>
 </section>
 {% endpaginate %}
+
+{%- comment -%} Variant picker + AJAX Add to cart now handled by the shared global assets/ona-product-card.js. {%- endcomment -%}
 
 {% schema %}
 {
